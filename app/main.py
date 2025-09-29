@@ -1,13 +1,16 @@
-import uvicorn
 from fastapi import FastAPI
+from app.core.config import settings
+import uvicorn
+
+from app.schemas.health_check import HealthCheckResponse
 
 app = FastAPI()
 
 
-@app.get("/")
-async def health_chec():
-    return {"status_code": 200, "detail": "ok", "result": "working"}
+@app.get("/", response_model=HealthCheckResponse)
+async def health_check() -> HealthCheckResponse:
+    return HealthCheckResponse()
 
 
 def start():
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=True)

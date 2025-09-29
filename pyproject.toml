@@ -37,7 +37,8 @@ dependencies = [
     "typing-inspection (==0.4.1)",
     "typing-extensions (==4.15.0)",
     "uvicorn (==0.37.0)",
-    "virtualenv (==20.34.0)"
+    "virtualenv (==20.34.0)",
+    "pydantic-settings (>=2.11.0,<3.0.0)"
 ]
 
 
