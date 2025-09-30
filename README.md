@@ -14,9 +14,12 @@ Quiz-App-BE/
 │ │ └── config.py 
 │ ├── db/                       # Modules for database interactions
 │ │ └── __init__.py 
+│ ├── routers/                  # Routers for application
+│ │ ├── __init__.py 
+│ │ └── root.py 
 │ ├── schemas/                  # Pydantic schemas for data validation
 │ │ ├── __init__.py 
-│ │ └── health_check.py 
+│ │ └── root.py 
 │ ├── services/                 # Business logic and services
 │ │ └── __init__.py 
 │ ├── utils/                    # Helper functions and utilities
@@ -30,7 +33,7 @@ Quiz-App-BE/
 │ │ └── __init__.py 
 │ ├── unit/                     # Unit tests
 │ │ ├── __init__.py 
-│ │ └── test_health_check.py  
+│ │ └── test_root.py  
 │ ├── __init__.py 
 │ └── pytest.ini                # Initial setup for tests
 ├── .dockerignore 

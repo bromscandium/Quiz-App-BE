@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 import uvicorn
 
-from app.schemas.health_check import HealthCheckResponse
+from app.routers.root import router as root_router
 
-app = FastAPI()
+app = FastAPI(title="Quiz App Backend", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,10 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/", response_model=HealthCheckResponse)
-async def health_check() -> HealthCheckResponse:
-    return HealthCheckResponse()
+app.include_router(root_router, tags=["root"])
 
 
 def start():
