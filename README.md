@@ -1,6 +1,6 @@
 # Quiz App Backend
 
-This is the backend for Quiz App, implemented with **FastAPI** and **Docker**.
+This is the **Python** backend for Quiz App, implemented with **FastAPI**, **PostgreSQL**, **Redis**, and **Docker**.
 
 ---
 
@@ -13,13 +13,17 @@ Quiz-App-BE/
 │ │ ├── __init__.py 
 │ │ └── config.py 
 │ ├── db/                       # Modules for database interactions
-│ │ └── __init__.py 
+│ │ ├── __init__.py 
+│ │ ├── postgres.py
+│ │ └── redis.py
+│ ├── models/                   # Models (for instance, User or QuizCard) for managing objects in application
+│ │ └── __init__.py     
 │ ├── routers/                  # Routers for application
 │ │ ├── __init__.py 
-│ │ └── root.py 
+│ │ └── health_check.py         
 │ ├── schemas/                  # Pydantic schemas for data validation
 │ │ ├── __init__.py 
-│ │ └── root.py 
+│ │ └── health_check.py 
 │ ├── services/                 # Business logic and services
 │ │ └── __init__.py 
 │ ├── utils/                    # Helper functions and utilities
@@ -33,13 +37,15 @@ Quiz-App-BE/
 │ │ └── __init__.py 
 │ ├── unit/                     # Unit tests
 │ │ ├── __init__.py 
-│ │ └── test_root.py  
+│ │ └── test_health_check.py  
 │ ├── __init__.py 
+│ ├── conftest.py 
 │ └── pytest.ini                # Initial setup for tests
 ├── .dockerignore 
 ├── .env.sample                 # Example environment variables, without secrets
 ├── .gitignore 
 ├── .pre-commit-config.yaml     # Configuration for pre-commit hooks
+├── docker-compose.yml          # Docker Compose orchestration
 ├── Dockerfile                  # Dockerfile for building the app container 
 ├── poetry.lock 
 ├── pyproject.toml              # Project configuration for Poetry 
@@ -55,65 +61,71 @@ git clone <https://github.com/bromscandium/Quiz-App-BE>
 cd Quiz-App-BE
 ```
 
-2. Build the Docker image:
+2. Build and run the Docker:
 
 ```bash
-docker build -t quiz-app-be .
+docker-compose up
 ```
 
-3. Run the Docker container:
+3. Rebuild After Code Changes:
 
 ```bash
-docker run --env-file .env -p 8000:8000 --name quiz-app-be-container quiz-app-be
+docker-compose up --build
 ```
 
-* `--env-file .env` loads environment variables from your `.env` file.
-* `-p 8000:8000` maps port 8000 of your local machine to port 8000 of the container.
-* `--name quiz-app-be-container` gives your container a name.
-* `quiz-app-be` is the name of the Docker image you built.
+4. Stop Services:
 
-4. Access the FastAPI server at `http://127.0.0.1:8000`
-5. API documentation is available at `http://127.0.0.1:8000/docs`
+```bash
+docker-compose down
+```
+
+5. Stop and Remove Volumes (Deletes Database Data)
+
+```bash
+docker-compose down -v
+```
 
 ---
 
-## Stopping and Restarting the Container
+## Accessing the Application
 
-* Stop the container:
-
-```bash
-docker stop quiz-app-be-container
-```
-
-* Restart the container:
-
-```bash
-docker start quiz-app-be-container
-```
-
-* Check running containers:
-
-```bash
-docker ps
-```
-
-* Remove the container if needed:
-
-```bash
-docker rm quiz-app-be-container
-```
+* API Server: http://{YOUR_LINK}:{YOUR_PORT}
+* API Documentation (Swagger): http://{YOUR_LINK}:{YOUR_PORT}/docs
 
 ---
 
 ## Testing
 
-* To run unit tests, use:
+### Prerequisites
+
+Activate virtual environment (if running locally):
+
+**Windows:**
+
+```bash
+venv\Scripts\activate
+```
+
+**Linux/Mac:**
+
+```bash
+source venv/bin/activate
+```
+
+**Run Tests:**
 
 ```bash
 poetry run pytest
 ```
 
-* Tests are located in the `tests/` folder.
-* Pytest will automatically find all `test_*.py` files.
+---
+
+## Health Check Endpoints
+
+The application includes health check endpoints to monitor service status:
+
+* `GET /` - Basic application health check
+* `GET /db` - PostgreSQL database connectivity check
+* `GET /redis` - Redis connectivity check
 
 ---
