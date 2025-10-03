@@ -1,25 +1,27 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from httpx import AsyncClient, ASGITransport
+
+from app.main import app
 
 
 @pytest.fixture(autouse=True)
 def mock_dependencies():
-    mock_session = MagicMock(spec=AsyncSession)
-    mock_session.execute = AsyncMock(return_value=None)
-    mock_session.rollback = AsyncMock()
-
-    async def mock_get_session():
-        yield mock_session
-
     mock_redis = MagicMock()
     mock_redis.ping = AsyncMock(return_value=True)
+    mock_redis.get = AsyncMock(return_value=None)
+    mock_redis.set = AsyncMock(return_value=True)
+    mock_redis.delete = AsyncMock(return_value=True)
+    mock_redis.aclose = AsyncMock()
 
-    with (
-        patch(
-            "app.db.postgres.sessionmanager.get_session",
-            return_value=mock_get_session(),
-        ),
-        patch("app.db.redis.RedisClient.redis_client", mock_redis),
-    ):
+    with patch("app.db.redis.RedisClient.redis_client", new=mock_redis):
         yield
+
+
+@pytest.fixture
+async def client():
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        yield ac
