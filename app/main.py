@@ -5,13 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.db.redis import RedisClient
-from app.db.postgres import sessionmanager
 from app.routers.health_check import router as health_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    sessionmanager.init_db()
     await RedisClient.connect()
     app.state.redis = RedisClient
     yield

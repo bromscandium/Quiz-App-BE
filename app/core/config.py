@@ -3,7 +3,15 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class DbSettings(BaseSettings):
+class BaseConfig(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+class DbSettings(BaseConfig):
     user: str
     password: str
     host: str
@@ -20,13 +28,10 @@ class DbSettings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="POSTGRES_",
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
     )
 
 
-class RedisSettings(BaseSettings):
+class RedisSettings(BaseConfig):
     host: str
     port: int
 
@@ -36,13 +41,10 @@ class RedisSettings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="REDIS_",
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
     )
 
 
-class AppSettings(BaseSettings):
+class AppSettings(BaseConfig):
     host: str = Field(alias="HOST")
     port: int = Field(alias="PORT")
     mode: str = Field(alias="MODE")
@@ -52,10 +54,7 @@ class AppSettings(BaseSettings):
     redis: RedisSettings = Field(default_factory=RedisSettings)
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
         populate_by_name=True,
-        extra="ignore",
     )
 
 

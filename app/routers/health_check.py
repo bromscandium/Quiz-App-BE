@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, HTTPException
 from sqlalchemy import text
 
 from app.schemas.health_check import HealthCheckResponse
-from app.db.postgres import sessionmanager
+from app.db.postgres import async_session
 from app.db.redis import RedisClient
 
 router = APIRouter()
@@ -30,7 +30,7 @@ async def health_check() -> HealthCheckResponse:
 )
 async def health_check_db() -> HealthCheckResponse:
     try:
-        async for session in sessionmanager.get_session():
+        async with async_session() as session:
             await session.execute(text("SELECT 1"))
         return HealthCheckResponse(
             status_code=status.HTTP_200_OK, detail="ok", result="working", database="ok"
