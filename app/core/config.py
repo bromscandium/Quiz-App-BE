@@ -9,11 +9,14 @@ class DbSettings(BaseSettings):
     host: str
     port: int
     db: str
-    url: str
     pool_size: int
     max_overflow: int
     pool_recycle: int
     debug: bool
+
+    @property
+    def url(self) -> str:
+        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
 
     model_config = SettingsConfigDict(
         env_prefix="POSTGRES_",
@@ -26,7 +29,10 @@ class DbSettings(BaseSettings):
 class RedisSettings(BaseSettings):
     host: str
     port: int
-    url: str
+
+    @property
+    def url(self) -> str:
+        return f"redis://{self.host}:{self.port}"
 
     model_config = SettingsConfigDict(
         env_prefix="REDIS_",

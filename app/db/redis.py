@@ -7,9 +7,7 @@ class RedisClient:
 
     @classmethod
     async def connect(cls):
-        cls.redis_client = redis.from_url(
-            settings.redis.url, decode_responses=True
-        )  # <- ВИПРАВЛЕНО!
+        cls.redis_client = redis.from_url(settings.redis.url, decode_responses=True)
         try:
             await cls.redis_client.ping()
             print("Redis connected")
