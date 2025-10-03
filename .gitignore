@@ -1,2 +1,13 @@
-.idea
-.git
+.idea/
+.git/
+venv/
+
+.env
+
+.ruff_cache/
+.pytest_cache/
+app/__pycache__/
+app/core/__pycache__/
+app/schemas/__pycache__/
+tests/__pycache__/
+tests/unit/__pycache__/
