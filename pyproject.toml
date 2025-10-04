@@ -38,7 +38,10 @@ dependencies = [
     "typing-extensions (==4.15.0)",
     "uvicorn (==0.37.0)",
     "virtualenv (==20.34.0)",
-    "pydantic-settings (>=2.11.0,<3.0.0)"
+    "pydantic-settings (>=2.11.0,<3.0.0)",
+    "sqlalchemy (>=2.0.43,<3.0.0)",
+    "asyncpg (>=0.30.0,<0.31.0)",
+    "redis[asyncio] (>=6.4.0,<7.0.0)"
 ]
 
 
@@ -53,5 +56,6 @@ start = "app.main:start"
 dev = [
     "pytest (>=8.4.2,<9.0.0)",
     "ruff (>=0.13.2,<0.14.0)",
-    "pre-commit (>=4.3.0,<5.0.0)"
+    "pre-commit (>=4.3.0,<5.0.0)",
+    "pytest-env (>=1.1.5,<2.0.0)"
 ]

@@ -10,7 +10,4 @@ RUN pip install --no-cache-dir poetry \
     && poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi
 
-
-EXPOSE 8000
-
 CMD ["poetry", "run", "start"]
