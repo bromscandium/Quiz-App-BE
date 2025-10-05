@@ -4,6 +4,8 @@ venv/
 
 .env
 
+*.log
+
 .ruff_cache/
 .pytest_cache/
 app/__pycache__/
