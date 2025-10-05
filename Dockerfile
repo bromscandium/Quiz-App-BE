@@ -8,6 +8,9 @@ COPY . /app
 
 RUN pip install --no-cache-dir poetry \
     && poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi
+    && poetry install --no-interaction --no-ansi \
+    && pip install alembic \
+    && pip install alembic sqlmodel
+
 
 CMD ["poetry", "run", "start"]
