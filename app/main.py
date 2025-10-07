@@ -12,15 +12,12 @@ from app.routers.health_check import router as health_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        logger.info("Connecting to Redis...")
         await RedisClient.connect()
         app.state.redis = RedisClient
         yield
     except Exception as e:
-        logger.exception("Error during lifespan setup")
         raise
     finally:
-        logger.info("Closing Redis connection")
         await app.state.redis.close()
 
 

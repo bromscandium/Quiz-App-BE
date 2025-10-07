@@ -1,4 +1,6 @@
 import redis.asyncio as redis
+
+from app.core import logger
 from app.core.config import settings
 
 
@@ -8,18 +10,19 @@ class RedisClient:
     @classmethod
     async def connect(cls):
         cls.redis_client = redis.from_url(settings.redis.url, decode_responses=True)
+        logger.info("Connecting to Redis...")
         try:
             await cls.redis_client.ping()
-            print("Redis connected")
+            logger.info("Connected to Redis")
         except redis.RedisError as e:
-            print(f"Redis connection failed: {e}")
+            logger.exception("Failed connection to Redis")
             raise
 
     @classmethod
     async def close(cls):
         if cls.redis_client:
             await cls.redis_client.aclose()
-            print("Redis closed")
+            logger.info("Redis closed")
 
     @classmethod
     async def set_key(cls, key: str, value: str):
