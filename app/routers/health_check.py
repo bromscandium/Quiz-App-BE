@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, HTTPException
 from sqlalchemy import text
 
+from app.core import logger
 from app.schemas.health_check import HealthCheckResponse
 from app.db.postgres import async_session
 from app.db.redis import RedisClient
@@ -16,6 +17,7 @@ router = APIRouter()
     description="Returns basic health status of the application.",
 )
 async def health_check() -> HealthCheckResponse:
+    logger.info("Health check have sent (app)")
     return HealthCheckResponse(
         status_code=status.HTTP_200_OK, detail="ok", result="working"
     )
@@ -32,10 +34,12 @@ async def health_check_db() -> HealthCheckResponse:
     try:
         async with async_session() as session:
             await session.execute(text("SELECT 1"))
+        logger.info("Health check have sent (db)")
         return HealthCheckResponse(
             status_code=status.HTTP_200_OK, detail="ok", result="working", database="ok"
         )
     except Exception as e:
+        logger.info("Health check have failed (db)")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"database": "error", "message": str(e)},
@@ -52,10 +56,12 @@ async def health_check_db() -> HealthCheckResponse:
 async def health_check_redis() -> HealthCheckResponse:
     try:
         await RedisClient.redis_client.ping()
+        logger.info("Health check have sent (redis)")
         return HealthCheckResponse(
             status_code=status.HTTP_200_OK, detail="ok", result="working", redis="ok"
         )
     except Exception as e:
+        logger.info("Health check have failed (redis)")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"redis": "error", "message": str(e)},

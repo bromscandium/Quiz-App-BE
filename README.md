@@ -11,25 +11,30 @@ Quiz-App-BE/
 ├── app/
 │ ├── core/                     # Core settings and configurations for the app
 │ │ ├── __init__.py 
-│ │ └── config.py 
+│ │ ├── config.py 
+│ │ └── logger.py 
 │ ├── db/                       # Modules for database interactions
 │ │ ├── __init__.py 
 │ │ ├── postgres.py
 │ │ └── redis.py
 │ ├── models/                   # Models (for instance, User or QuizCard) for managing objects in application
-│ │ └── __init__.py     
+│ │ ├── __init__.py 
+│ │ └── user.py     
 │ ├── routers/                  # Routers for application
 │ │ ├── __init__.py 
 │ │ └── health_check.py         
 │ ├── schemas/                  # Pydantic schemas for data validation
 │ │ ├── __init__.py 
-│ │ └── health_check.py 
+│ │ ├── health_check.py 
+│ │ └── user.py 
 │ ├── services/                 # Business logic and services
 │ │ └── __init__.py 
 │ ├── utils/                    # Helper functions and utilities
 │ │ └── __init__.py 
 │ ├── __init__.py 
 │ └── main.py                   # Entry point
+├── logs/                       # Logs of your applicaion
+├── migrations/                 # Alembic migrations for database
 ├── tests/
 │ ├── e2e/                      # End-to-end tests
 │ │ └── __init__.py 
@@ -45,6 +50,7 @@ Quiz-App-BE/
 ├── .env.sample                 # Example environment variables, without secrets
 ├── .gitignore 
 ├── .pre-commit-config.yaml     # Configuration for pre-commit hooks
+├── alembic.ini                 
 ├── docker-compose.yml          # Docker Compose orchestration
 ├── Dockerfile                  # Dockerfile for building the app container 
 ├── poetry.lock 
@@ -91,6 +97,55 @@ docker-compose down -v
 
 * API Server: http://{YOUR_LINK}:{YOUR_PORT}
 * API Documentation (Swagger): http://{YOUR_LINK}:{YOUR_PORT}/docs
+
+---
+
+## Database Migrations (Alembic)
+
+This project uses **Alembic** to handle database migrations for PostgreSQL.
+
+### Creating a New Migration
+
+1. Make sure the Docker containers are running:
+
+```bash
+docker-compose up -d
+```
+
+2. Create a new migration based on changes in your SQLModel or SQLAlchemy models:
+
+```bash
+docker-compose exec app alembic revision --autogenerate -m "<migration_name>"
+```
+
+This will generate a new migration file in the `migrations/versions/` directory.
+
+### Applying Migrations
+
+1. Apply all pending migrations to the database:
+
+```bash
+docker-compose exec app alembic upgrade head
+```
+
+2. Verify the applied migrations:
+
+```bash
+docker-compose exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+```
+
+Then run in the psql shell (in my case):
+
+```
+\dt
+```
+
+You should see the `alembic_version` table along with other migrated tables.
+
+### Notes
+
+
+* Keep all migration scripts in `migrations/versions/` under version control.
 
 ---
 

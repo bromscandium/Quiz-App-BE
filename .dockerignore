@@ -9,3 +9,4 @@ build/
 tests/
 .git/
 .idea/
+*.log
