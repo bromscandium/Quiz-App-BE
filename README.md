@@ -9,52 +9,71 @@ This is the **Python** backend for Quiz App, implemented with **FastAPI**, **Pos
 ```
 Quiz-App-BE/
 ├── app/
-│ ├── core/                     # Core settings and configurations for the app
+│ ├── core/                         # Core settings and configurations for the app
 │ │ ├── __init__.py 
 │ │ ├── config.py 
 │ │ └── logger.py 
-│ ├── db/                       # Modules for database interactions
+│ ├── db/                           # Modules for database interactions
 │ │ ├── __init__.py 
 │ │ ├── postgres.py
 │ │ └── redis.py
-│ ├── models/                   # Models (for instance, User or QuizCard) for managing objects in application
-│ │ ├── __init__.py 
-│ │ └── user.py     
-│ ├── routers/                  # Routers for application
-│ │ ├── __init__.py 
-│ │ └── health_check.py         
-│ ├── schemas/                  # Pydantic schemas for data validation
+│ ├── exceptions/                   # Custom exceptions
 │ │ ├── __init__.py 
 │ │ ├── health_check.py 
-│ │ └── user.py 
-│ ├── services/                 # Business logic and services
-│ │ └── __init__.py 
-│ ├── utils/                    # Helper functions and utilities
-│ │ └── __init__.py 
-│ ├── __init__.py 
-│ └── main.py                   # Entry point
-├── logs/                       # Logs of your applicaion
-├── migrations/                 # Alembic migrations for database
-├── tests/
-│ ├── e2e/                      # End-to-end tests
-│ │ └── __init__.py 
-│ ├── integration/              # Integration tests
-│ │ └── __init__.py 
-│ ├── unit/                     # Unit tests
+│ │ └── user_exceptions.py 
+│ ├── models/                       # Models (for instance, User or QuizCard) for managing objects in application
 │ │ ├── __init__.py 
+│ │ ├── mixins.py 
+│ │ └── user_model.py     
+│ ├── repositories/                 # Repositories for database access and data operations
+│ │ ├── __init__.py 
+│ │ ├── base_repository.py 
+│ │ └── user_repository.py    
+│ ├── routers/                      # Routers for application
+│ │ ├── __init__.py 
+│ │ ├── health_check.py         
+│ │ └── user_router.py     
+│ ├── schemas/                      # Pydantic schemas for data validation
+│ │ ├── __init__.py 
+│ │ ├── health_check.py 
+│ │ └── user_schema.py 
+│ ├── services/                     # Business logic and services
+│ │ ├── __init__.py 
+│ │ └── user_service.py 
+│ ├── unit_of_work/                 # Unit of work
+│ │ ├── __init__.py 
+│ │ └── uow.py 
+│ ├── utils/                        # Helper functions and utilities
+│ │ ├── __init__.py 
+│ │ ├── logger.py 
+│ │ └── password_service.py 
+│ ├── __init__.py 
+│ └── main.py                       # Entry point
+├── logs/                           # Logs of your applicaion
+├── migrations/                     # Alembic migrations for database
+├── tests/
+│ ├── e2e/                          # End-to-end tests
+│ │ └── __init__.py 
+│ ├── integration/                  # Integration tests
+│ │ ├── __init__.py 
+│ │ ├── test_user_router.py  
 │ │ └── test_health_check.py  
+│ ├── unit/                         # Unit tests
+│ │ ├── __init__.py 
+│ │ └── test_user_service.py  
 │ ├── __init__.py 
 │ ├── conftest.py 
-│ └── pytest.ini                # Initial setup for tests
+│ ├── factories.py 
+│ └── pytest.ini                    # Initial setup for tests
 ├── .dockerignore 
-├── .env.sample                 # Example environment variables, without secrets
+├── .env.sample                     # Example environment variables, without secrets
 ├── .gitignore 
-├── .pre-commit-config.yaml     # Configuration for pre-commit hooks
+├── .pre-commit-config.yaml         # Configuration for pre-commit hooks
 ├── alembic.ini                 
-├── docker-compose.yml          # Docker Compose orchestration
-├── Dockerfile                  # Dockerfile for building the app container 
+├── docker-compose.yml              # Docker Compose orchestration
+├── Dockerfile                      # Dockerfile for building the app container 
 ├── poetry.lock 
-├── pyproject.toml              # Project configuration for Poetry 
+├── pyproject.toml                  # Project configuration for Poetry 
 └── README.md 
 ```
 
@@ -144,33 +163,16 @@ You should see the `alembic_version` table along with other migrated tables.
 
 ### Notes
 
-
 * Keep all migration scripts in `migrations/versions/` under version control.
 
 ---
 
 ## Testing
 
-### Prerequisites
-
-Activate virtual environment (if running locally):
-
-**Windows:**
-
-```bash
-venv\Scripts\activate
-```
-
-**Linux/Mac:**
-
-```bash
-source venv/bin/activate
-```
-
 **Run Tests:**
 
 ```bash
-poetry run pytest
+docker-compose exec app poetry run pytest
 ```
 
 ---
