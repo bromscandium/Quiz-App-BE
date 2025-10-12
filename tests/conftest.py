@@ -1,25 +1,40 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-
+import pytest_asyncio
+from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 
 
-@pytest.fixture(autouse=True)
-def mock_dependencies():
-    mock_redis = MagicMock()
-    mock_redis.ping = AsyncMock(return_value=True)
-    mock_redis.get = AsyncMock(return_value=None)
-    mock_redis.set = AsyncMock(return_value=True)
-    mock_redis.delete = AsyncMock(return_value=True)
-    mock_redis.aclose = AsyncMock()
-
-    with patch("app.db.redis.RedisClient.redis_client", new=mock_redis):
-        yield
+@pytest_asyncio.fixture
+def mock_user_repo():
+    repo = AsyncMock()
+    repo.create = AsyncMock()
+    repo.read_by = AsyncMock(return_value=None)
+    repo.read_all = AsyncMock(return_value=[])
+    repo.update_by = AsyncMock()
+    repo.delete_by = AsyncMock()
+    return repo
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
+def mock_uow(mock_user_repo):
+    uow = AsyncMock()
+    uow.users = mock_user_repo
+    uow.commit = AsyncMock()
+    uow.rollback = AsyncMock()
+    uow.__aenter__ = AsyncMock(return_value=uow)
+    uow.__aexit__ = AsyncMock(return_value=None)
+    return uow
+
+
+@pytest_asyncio.fixture()
+def mock_redis():
+    redis = AsyncMock()
+    with patch("app.db.redis.RedisClient.redis_client", new=redis):
+        yield redis
+
+
+@pytest_asyncio.fixture
 async def client():
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
