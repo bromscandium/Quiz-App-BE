@@ -3,10 +3,11 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core import logger
+from app.utils.logger import logger
 from app.core.config import settings
 from app.db.redis import RedisClient
 from app.routers.health_check import router as health_router
+from app.routers.user_router import router as user_router
 
 
 @asynccontextmanager
@@ -32,6 +33,7 @@ app.add_middleware(
 )
 
 app.include_router(health_router, tags=["health"])
+app.include_router(user_router, tags=["users"])
 
 
 def start():

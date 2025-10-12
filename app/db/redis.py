@@ -1,6 +1,6 @@
 import redis.asyncio as redis
 
-from app.core import logger
+from app.utils import logger
 from app.core.config import settings
 
 
