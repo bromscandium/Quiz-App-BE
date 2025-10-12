@@ -42,5 +42,5 @@ class UsersListResponse(UserBase):
 
 
 class UserDetailResponse(UserSchema):
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
