@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, ConfigDict
 
 
@@ -9,7 +9,7 @@ class UserBase(BaseModel):
 
 
 class UserSchema(UserBase):
-    id: int
+    id: UUID
     email: EmailStr
     name: str
     surname: Optional[str]
@@ -42,5 +42,5 @@ class UsersListResponse(UserBase):
 
 
 class UserDetailResponse(UserSchema):
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]

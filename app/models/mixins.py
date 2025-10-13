@@ -1,23 +1,25 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    DateTime,
-    func,
-)
-from sqlalchemy.orm import declared_attr
+import uuid
+
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, func
+from sqlalchemy.dialects.postgresql import UUID
 
 
-class IdMixin(object):
-    @declared_attr
-    def id(cls):
-        return Column(Integer, primary_key=True, index=True, nullable=False)
+class IdMixin:
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        nullable=False,
+        unique=True,
+        default=uuid.uuid4,
+    )
 
 
-class TimestampMixin(object):
-    @declared_attr
-    def created_at(cls):
-        return Column(DateTime, default=func.now(), nullable=False)
-
-    @declared_attr
-    def updated_at(cls):
-        return Column(DateTime, default=func.now(), nullable=False)
+class TimestampMixin:
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, default=func.now(), nullable=False
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, default=func.now(), nullable=False
+    )
