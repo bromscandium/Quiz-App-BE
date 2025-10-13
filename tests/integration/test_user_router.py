@@ -1,10 +1,13 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from fastapi import status
+from app.exceptions.user_exceptions import (
+    UserAlreadyExistsException,
+    UserNotFoundException,
+)
 from tests.factories import (
     make_user,
     make_signup_request,
-    make_update_request,
     make_user_detail_response,
 )
 from app.schemas.user_schema import UsersListResponse, UserSchema
@@ -34,7 +37,7 @@ async def test_create_user_already_exists(client, mock_uow):
     with patch(
         "app.services.user_service.UserService.create_user", new_callable=AsyncMock
     ) as mock_create:
-        mock_create.side_effect = ValueError("User already exists")
+        mock_create.side_effect = UserAlreadyExistsException()
         response = await client.post("/users/", json=data.model_dump())
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -61,7 +64,7 @@ async def test_get_user_by_id_not_found(client, mock_uow):
     with patch(
         "app.services.user_service.UserService.get_user_by_id", new_callable=AsyncMock
     ) as mock_get:
-        mock_get.return_value = None
+        mock_get.side_effect = UserNotFoundException()
         response = await client.get("/users/999")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -103,7 +106,7 @@ async def test_delete_user_not_found(client, mock_uow):
     with patch(
         "app.services.user_service.UserService.delete_user", new_callable=AsyncMock
     ) as mock_delete:
-        mock_delete.side_effect = ValueError("User not found")
+        mock_delete.side_effect = UserNotFoundException()
         response = await client.delete("/users/999")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND

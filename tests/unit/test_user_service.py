@@ -1,12 +1,17 @@
 import pytest
 from unittest.mock import AsyncMock
 from app.services.user_service import UserService
+from app.exceptions.user_exceptions import (
+    UserAlreadyExistsException,
+    UserNotFoundException,
+)
 from tests.factories import make_user, make_signup_request, make_update_request
 
 
 @pytest.mark.asyncio
 async def test_create_user_successfully(mock_uow):
     data = make_signup_request()
+    mock_uow.users.read_by = AsyncMock(return_value=None)
     mock_uow.users.create = AsyncMock(return_value=make_user())
 
     user = await UserService.create_user(mock_uow, data)
@@ -20,10 +25,8 @@ async def test_create_user_already_exists(mock_uow):
     data = make_signup_request()
     mock_uow.users.read_by = AsyncMock(return_value=make_user())
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(UserAlreadyExistsException):
         await UserService.create_user(mock_uow, data)
-
-    assert str(exc.value) == "User already exists"
 
 
 @pytest.mark.asyncio
@@ -40,14 +43,18 @@ async def test_get_user_with_id(mock_uow):
 @pytest.mark.asyncio
 async def test_no_user_with_id(mock_uow):
     mock_uow.users.read_by = AsyncMock(return_value=None)
-    user = await UserService.get_user_by_id(mock_uow, 1)
-    assert user is None
+
+    with pytest.raises(UserNotFoundException):
+        await UserService.get_user_by_id(mock_uow, 1)
 
 
 @pytest.mark.asyncio
 async def test_update_user_successfully(mock_uow):
     data = make_update_request()
+    existing_user = make_user()
     updated_user = make_user(hashed_password="new_hash")
+
+    mock_uow.users.read_by = AsyncMock(return_value=existing_user)
     mock_uow.users.update_by = AsyncMock(return_value=updated_user)
 
     user = await UserService.update_user(mock_uow, 1, data)
@@ -83,14 +90,8 @@ async def test_get_list_of_users(mock_uow):
 
 
 @pytest.mark.asyncio
-async def test_no_user_with_id(mock_uow):
-    user = await UserService.get_user_by_id(mock_uow, 1)
-
-    assert user is None
-
-
-@pytest.mark.asyncio
 async def test_no_user_with_email(mock_uow):
-    user = await UserService.get_user_by_email(mock_uow, "1234qwer@ukr.net")
+    mock_uow.users.read_by = AsyncMock(return_value=None)
 
-    assert user is None
+    with pytest.raises(UserNotFoundException):
+        await UserService.get_user_by_email(mock_uow, "1234qwer@ukr.net")

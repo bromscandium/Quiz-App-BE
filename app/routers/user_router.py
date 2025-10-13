@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-
+from uuid import UUID
 from app.exceptions.user_exceptions import *
 from app.models import User
 from app.unit_of_work.uow import UnitOfWork
@@ -29,12 +29,7 @@ async def get_uow():
     description="Creates a new user in the system. Raises 400 if user already exists or validation fails.",
 )
 async def create_user(data: SignUpRequest, uow: UnitOfWork = Depends(get_uow)) -> User:
-    try:
-        return await UserService.create_user(uow, data)
-    except ValueError:
-        raise UserAlreadyExistsException()
-    except Exception as e:
-        raise UserInternalErrorException(str(e))
+    return await UserService.create_user(uow, data)
 
 
 @router.get(
@@ -45,12 +40,9 @@ async def create_user(data: SignUpRequest, uow: UnitOfWork = Depends(get_uow)) -
     description="Fetches a user by their unique ID. Returns 404 if the user does not exist.",
 )
 async def get_user_by_id(
-    user_id: int, uow: UnitOfWork = Depends(get_uow)
+    user_id: UUID, uow: UnitOfWork = Depends(get_uow)
 ) -> UserDetailResponse | None:
-    user = await UserService.get_user_by_id(uow, user_id)
-    if not user:
-        raise UserNotFoundException()
-    return user
+    return await UserService.get_user_by_id(uow, user_id)
 
 
 @router.get(
@@ -63,10 +55,7 @@ async def get_user_by_id(
 async def read_all_users(
     offset: int = 0, limit: int = 20, uow: UnitOfWork = Depends(get_uow)
 ) -> UsersListResponse:
-    try:
-        return await UserService.read_all_users(uow, offset, limit)
-    except Exception:
-        raise UserInternalErrorException("Failed to fetch users")
+    return await UserService.read_all_users(uow, offset, limit)
 
 
 @router.put(
@@ -77,19 +66,9 @@ async def read_all_users(
     description="Updates a user's details by their ID. Returns 404 if the user does not exist.",
 )
 async def update_user(
-    user_id: int, data: UserUpdateRequest, uow: UnitOfWork = Depends(get_uow)
+    user_id: UUID, data: UserUpdateRequest, uow: UnitOfWork = Depends(get_uow)
 ) -> UserSchema:
-    try:
-        user = await UserService.update_user(uow, user_id, data)
-    except ValueError:
-        raise UserAlreadyExistsException()
-    except Exception as e:
-        raise UserInternalErrorException(str(e))
-
-    if not user:
-        raise UserNotFoundException()
-
-    return user
+    return await UserService.update_user(uow, user_id, data)
 
 
 @router.delete(
@@ -98,10 +77,5 @@ async def update_user(
     summary="Delete user",
     description="Deletes a user by their ID. Returns 404 if the user does not exist.",
 )
-async def delete_user(user_id: int, uow: UnitOfWork = Depends(get_uow)) -> None:
-    try:
-        await UserService.delete_user(uow, user_id)
-    except ValueError:
-        raise UserNotFoundException()
-    except Exception as e:
-        raise UserInternalErrorException(str(e))
+async def delete_user(user_id: UUID, uow: UnitOfWork = Depends(get_uow)) -> None:
+    await UserService.delete_user(uow, user_id)
