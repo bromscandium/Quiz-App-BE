@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, ConfigDict
 
 
@@ -9,7 +9,7 @@ class UserBase(BaseModel):
 
 
 class UserSchema(UserBase):
-    id: int
+    id: UUID
     email: EmailStr
     name: str
     surname: Optional[str]

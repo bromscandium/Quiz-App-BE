@@ -11,8 +11,8 @@ class Base(DeclarativeBase):
 class User(Base, IdMixin, TimestampMixin):
     __tablename__ = "users"
 
-    name: Mapped[str] = mapped_column(String(100))
-    surname: Mapped[str] = mapped_column(String(100))
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    surname: Mapped[str] = mapped_column(String(100), nullable=True)
     nickname: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     email: Mapped[str] = mapped_column(
         String(320), unique=True, nullable=False, index=True

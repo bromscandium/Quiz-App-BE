@@ -1,10 +1,18 @@
+import uuid
+
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer, DateTime, func
+from sqlalchemy import DateTime, func
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class IdMixin:
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, index=True, nullable=False
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        nullable=False,
+        unique=True,
+        default=uuid.uuid4,
     )
 
 
