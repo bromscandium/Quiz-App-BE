@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from fastapi import status
+from uuid import uuid4
+
 from app.exceptions.user_exceptions import (
     UserAlreadyExistsException,
     UserNotFoundException,
@@ -52,20 +54,22 @@ async def test_get_user_by_id_success(client, mock_uow):
         "app.services.user_service.UserService.get_user_by_id", new_callable=AsyncMock
     ) as mock_get:
         mock_get.return_value = expected_user
-        response = await client.get("/users/1")
+        response = await client.get(f"/users/{expected_user.id}")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["id"] == expected_user.id
+    assert response.json()["id"] == str(expected_user.id)
     assert response.json()["email"] == expected_user.email
 
 
 @pytest.mark.asyncio
 async def test_get_user_by_id_not_found(client, mock_uow):
+    user_id = uuid4()
+
     with patch(
         "app.services.user_service.UserService.get_user_by_id", new_callable=AsyncMock
     ) as mock_get:
         mock_get.side_effect = UserNotFoundException()
-        response = await client.get("/users/999")
+        response = await client.get(f"/users/{user_id}")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "User not found"
@@ -73,10 +77,10 @@ async def test_get_user_by_id_not_found(client, mock_uow):
 
 @pytest.mark.asyncio
 async def test_read_all_users_success(client, mock_uow):
-    users_list = [
-        make_user(id=1),
-        make_user(id=2, name="Alice", nickname="alice123", email="alice@mail.com"),
-    ]
+    user1 = make_user()
+    user2 = make_user(name="Alice", nickname="alice123", email="alice@mail.com")
+    users_list = [user1, user2]
+
     with patch(
         "app.services.user_service.UserService.read_all_users", new_callable=AsyncMock
     ) as mock_list:
@@ -87,27 +91,30 @@ async def test_read_all_users_success(client, mock_uow):
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["users"]) == 2
-    assert response.json()["users"][0]["id"] == 1
 
 
 @pytest.mark.asyncio
 async def test_delete_user_success(client, mock_uow):
+    user_id = uuid4()
+
     with patch(
         "app.services.user_service.UserService.delete_user", new_callable=AsyncMock
     ) as mock_delete:
         mock_delete.return_value = None
-        response = await client.delete("/users/1")
+        response = await client.delete(f"/users/{user_id}")
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
 @pytest.mark.asyncio
 async def test_delete_user_not_found(client, mock_uow):
+    user_id = uuid4()
+
     with patch(
         "app.services.user_service.UserService.delete_user", new_callable=AsyncMock
     ) as mock_delete:
         mock_delete.side_effect = UserNotFoundException()
-        response = await client.delete("/users/999")
+        response = await client.delete(f"/users/{user_id}")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "User not found"

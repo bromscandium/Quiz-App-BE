@@ -2,8 +2,9 @@ from pydantic import EmailStr
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 from app.models.user_model import User
+from app.services.refresh_token_service import RefreshTokenService
 from app.unit_of_work.uow import UnitOfWork
-from app.utils.password_service import PasswordService
+from app.utils.password_util import PasswordUtil
 from app.schemas.user_schema import (
     SignUpRequest,
     UserUpdateRequest,
@@ -20,23 +21,24 @@ from app.exceptions.user_exceptions import (
 
 
 class UserService:
-    @staticmethod
-    async def create_user(uow: UnitOfWork, data: SignUpRequest) -> User:
+    def __init__(self, refresh_token: RefreshTokenService):
+        self.refresh_token = refresh_token
+
+    async def create_user(self, uow: UnitOfWork, data: SignUpRequest) -> User:
         try:
             existing = await uow.users.read_by("email", data.email)
             if existing:
                 raise UserAlreadyExistsException()
 
             user_data = data.model_dump(exclude={"password"})
-            user_data["hashed_password"] = PasswordService().hash_password(
-                data.password
-            )
+            user_data["hashed_password"] = PasswordUtil().hash_password(data.password)
             user = await uow.users.create(**user_data)
             await uow.commit()
             logger.info("User created")
             return user
 
         except UserAlreadyExistsException:
+            await uow.rollback()
             raise
         except IntegrityError as e:
             await uow.rollback()
@@ -47,8 +49,9 @@ class UserService:
             logger.exception(f"Error while creating user: {e}")
             raise UserInternalErrorException(str(e))
 
-    @staticmethod
-    async def get_user_by_id(uow: UnitOfWork, user_id: UUID) -> UserDetailResponse:
+    async def get_user_by_id(
+        self, uow: UnitOfWork, user_id: UUID
+    ) -> UserDetailResponse:
         try:
             user = await uow.users.read_by("id", user_id)
             if not user:
@@ -60,12 +63,13 @@ class UserService:
             logger.exception(f"Error while fetching user by id: {e}")
             raise UserInternalErrorException(str(e))
 
-    @staticmethod
-    async def get_user_by_email(uow: UnitOfWork, email: EmailStr) -> UserDetailResponse:
+    async def get_user_by_email(
+        self, uow: UnitOfWork, email: EmailStr
+    ) -> UserDetailResponse | None:
         try:
             user = await uow.users.read_by("email", email)
             if not user:
-                raise UserNotFoundException()
+                return None
             return UserDetailResponse.model_validate(user)
         except UserNotFoundException:
             raise
@@ -73,9 +77,8 @@ class UserService:
             logger.exception(f"Error while fetching user by email: {e}")
             raise UserInternalErrorException(str(e))
 
-    @staticmethod
     async def read_all_users(
-        uow: UnitOfWork, offset: int = 0, limit: int = 20
+        self, uow: UnitOfWork, offset: int = 0, limit: int = 20
     ) -> UsersListResponse:
         try:
             users = await uow.users.read_all(offset=offset, limit=limit)
@@ -85,9 +88,8 @@ class UserService:
             logger.exception(f"Error while fetching list of users: {e}")
             raise UserInternalErrorException("Failed to fetch users")
 
-    @staticmethod
     async def update_user(
-        uow: UnitOfWork, user_id: UUID, data: UserUpdateRequest
+        self, uow: UnitOfWork, user_id: UUID, data: UserUpdateRequest
     ) -> UserSchema:
         try:
             existing_user = await uow.users.read_by("id", user_id)
@@ -97,7 +99,7 @@ class UserService:
             update_data = data.model_dump(exclude_unset=True)
 
             if "password" in update_data:
-                update_data["hashed_password"] = PasswordService().hash_password(
+                update_data["hashed_password"] = PasswordUtil().hash_password(
                     data.password
                 )
                 del update_data["password"]
@@ -108,6 +110,7 @@ class UserService:
             return UserSchema.model_validate(user)
 
         except UserNotFoundException:
+            await uow.rollback()
             raise
         except IntegrityError as e:
             await uow.rollback()
@@ -118,18 +121,18 @@ class UserService:
             logger.exception(f"Error while updating user: {e}")
             raise UserInternalErrorException(str(e))
 
-    @staticmethod
-    async def delete_user(uow: UnitOfWork, user_id: UUID) -> None:
+    async def delete_user(self, uow: UnitOfWork, user_id: UUID) -> None:
         try:
             user = await uow.users.read_by("id", user_id)
             if not user:
                 raise UserNotFoundException()
-
+            await self.refresh_token.delete_refresh_token(uow, user_id)
             await uow.users.delete_by("id", user_id)
             await uow.commit()
             logger.info(f"User deleted")
 
         except UserNotFoundException:
+            await uow.rollback()
             raise
         except Exception as e:
             await uow.rollback()

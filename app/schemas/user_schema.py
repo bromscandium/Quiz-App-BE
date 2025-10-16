@@ -12,35 +12,36 @@ class UserSchema(UserBase):
     id: UUID
     email: EmailStr
     name: str
-    surname: Optional[str]
+    surname: Optional[str] = None
     nickname: str
-
-
-class SignInRequest(UserBase):
-    email: EmailStr
-    password: str
 
 
 class SignUpRequest(UserBase):
     email: EmailStr
     name: str
-    surname: Optional[str]
+    surname: Optional[str] = None
     nickname: str
     password: str
 
 
 class UserUpdateRequest(UserBase):
-    email: Optional[EmailStr]
-    name: Optional[str]
-    surname: Optional[str]
-    nickname: Optional[str]
-    password: Optional[str]
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    surname: Optional[str] = None
+    nickname: Optional[str] = None
+    password: Optional[str] = None
 
 
 class UsersListResponse(UserBase):
-    users: List[UserSchema]
+    users: List[UserSchema] = []
 
 
 class UserDetailResponse(UserSchema):
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    sub: Optional[str] = None
+    picture: Optional[str] = None
+    permissions: List[str] = []
+    scope: List[str] = []
+    email_verified: Optional[bool] = None
+    hashed_password: str = ""
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
