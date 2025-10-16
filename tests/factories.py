@@ -1,14 +1,14 @@
+from uuid import uuid4
 from app.models import User
 from app.schemas.user_schema import (
     SignUpRequest,
     UserUpdateRequest,
     UserDetailResponse,
-    UserSchema,
 )
 
 
 def make_user(
-    id=1,
+    id=None,
     name="Bob",
     surname="Smith",
     nickname="ns123",
@@ -16,7 +16,7 @@ def make_user(
     hashed_password="hashed_pass",
 ):
     return User(
-        id=id,
+        id=id if id else uuid4(),
         name=name,
         surname=surname,
         nickname=nickname,
@@ -58,6 +58,7 @@ def make_user_detail_response(user=None):
         surname=user.surname,
         nickname=user.nickname,
         email=user.email,
+        hashed_password=user.hashed_password,
         created_at=None,
         updated_at=None,
     )
