@@ -1,9 +1,11 @@
 .idea/
 .git/
 venv/
+.ssh/
 
 .env
-
+secrets/private.pem
+scripts/
 *.log
 
 .ruff_cache/
