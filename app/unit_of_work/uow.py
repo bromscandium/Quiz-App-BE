@@ -2,11 +2,14 @@ from __future__ import annotations
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 
 
 class UnitOfWork:
     users: UserRepository
+    refresh_tokens: RefreshTokenRepository
     session: Optional[AsyncSession] = None
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
@@ -15,6 +18,7 @@ class UnitOfWork:
     async def __aenter__(self) -> "UnitOfWork":
         self.session = self._session_factory()
         self.users = UserRepository(self.session)
+        self.refresh_tokens = RefreshTokenRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:

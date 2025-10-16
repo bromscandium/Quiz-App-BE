@@ -21,6 +21,16 @@ class BaseRepository(Generic[T]):
         result = await self.session.execute(query)
         return result.scalars().first()
 
+    async def read_all_by(
+        self, field: str, value: Any, offset: int = 0, limit: int = 20
+    ) -> List[T]:
+        field_attr = getattr(self.model, field)
+        query = (
+            select(self.model).where(field_attr == value).offset(offset).limit(limit)
+        )
+        result = await self.session.execute(query)
+        return result.scalars().all()
+
     async def read_all(self, offset: int = 0, limit: int = 20) -> List[T]:
         query = select(self.model).offset(offset).limit(limit)
         result = await self.session.execute(query)
