@@ -17,9 +17,20 @@ def mock_user_repo():
 
 
 @pytest_asyncio.fixture
-def mock_uow(mock_user_repo):
+def mock_refresh_token_repo():
+    repo = AsyncMock()
+    repo.create = AsyncMock()
+    repo.read_by = AsyncMock(return_value=None)
+    repo.update_by = AsyncMock()
+    repo.delete_by = AsyncMock()
+    return repo
+
+
+@pytest_asyncio.fixture
+def mock_uow(mock_user_repo, mock_refresh_token_repo):
     uow = AsyncMock()
     uow.users = mock_user_repo
+    uow.refresh_tokens = mock_refresh_token_repo
     uow.commit = AsyncMock()
     uow.rollback = AsyncMock()
     uow.__aenter__ = AsyncMock(return_value=uow)
@@ -36,7 +47,8 @@ def mock_redis():
 
 @pytest_asyncio.fixture
 async def client():
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
-        yield ac
+    with patch("app.dependencies.auth0_dependency.Auth0Dependency"):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            yield ac
