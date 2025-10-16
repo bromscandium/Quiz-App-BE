@@ -1,7 +1,7 @@
 import redis.asyncio as redis
 
 from app.utils import logger
-from app.core.config import settings
+from app.core.app import app_settings
 
 
 class RedisClient:
@@ -9,7 +9,7 @@ class RedisClient:
 
     @classmethod
     async def connect(cls):
-        cls.redis_client = redis.from_url(settings.redis.url, decode_responses=True)
+        cls.redis_client = redis.from_url(app_settings.redis.url, decode_responses=True)
         logger.info("Connecting to Redis...")
         try:
             await cls.redis_client.ping()
