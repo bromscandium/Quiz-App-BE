@@ -1,6 +1,4 @@
 from __future__ import annotations
-from typing import Optional
-
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.repositories.refresh_token_repository import RefreshTokenRepository
@@ -10,7 +8,7 @@ from app.repositories.user_repository import UserRepository
 class UnitOfWork:
     users: UserRepository
     refresh_tokens: RefreshTokenRepository
-    session: Optional[AsyncSession] = None
+    session: AsyncSession | None = None
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
         self._session_factory = session_factory

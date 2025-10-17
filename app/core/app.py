@@ -1,4 +1,3 @@
-from typing import List
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
@@ -42,7 +41,7 @@ class AppSettings(BaseConfig):
     host: str = Field(alias="HOST")
     port: int = Field(alias="PORT")
     mode: str = Field(alias="MODE")
-    allowed_origins: List[str] = Field(default=["*"], alias="ALLOWED_ORIGINS")
+    allowed_origins: list[str] = Field(default=["*"], alias="ALLOWED_ORIGINS")
 
     db: DbSettings = Field(default_factory=DbSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
