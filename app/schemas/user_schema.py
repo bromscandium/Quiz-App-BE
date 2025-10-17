@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, ConfigDict
 
@@ -12,35 +11,36 @@ class UserSchema(UserBase):
     id: UUID
     email: EmailStr
     name: str
-    surname: Optional[str]
+    surname: str | None = None
     nickname: str
-
-
-class SignInRequest(UserBase):
-    email: EmailStr
-    password: str
 
 
 class SignUpRequest(UserBase):
     email: EmailStr
     name: str
-    surname: Optional[str]
+    surname: str | None = None
     nickname: str
     password: str
 
 
 class UserUpdateRequest(UserBase):
-    email: Optional[EmailStr]
-    name: Optional[str]
-    surname: Optional[str]
-    nickname: Optional[str]
-    password: Optional[str]
+    email: EmailStr | None = None
+    name: str | None = None
+    surname: str | None = None
+    nickname: str | None = None
+    password: str | None = None
 
 
 class UsersListResponse(UserBase):
-    users: List[UserSchema]
+    users: list[UserSchema] = []
+    total: int = 0
 
 
 class UserDetailResponse(UserSchema):
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    picture: str | None = None
+    permissions: list[str] = []
+    scope: list[str] = []
+    email_verified: bool | None = None
+    hashed_password: str = ""
+    created_at: datetime | None = None
+    updated_at: datetime | None = None

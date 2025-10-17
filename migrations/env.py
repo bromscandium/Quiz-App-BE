@@ -2,11 +2,11 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-from app.core.config import settings
+from app.core.app import app_settings
 from app.models import Base
 
 config = context.config
-sync_url = f"postgresql+psycopg2://{settings.db.user}:{settings.db.password}@{settings.db.host}:{settings.db.port}/{settings.db.db}"
+sync_url = f"postgresql+psycopg2://{app_settings.db.user}:{app_settings.db.password}@{app_settings.db.host}:{app_settings.db.port}/{app_settings.db.db}"
 config.set_main_option("sqlalchemy.url", sync_url)
 
 if config.config_file_name is not None:

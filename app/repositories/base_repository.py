@@ -1,5 +1,5 @@
-from typing import Generic, TypeVar, Optional, List, Type, Any, Dict
-from sqlalchemy import select, update, delete
+from typing import Generic, TypeVar, Type, Any
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 T = TypeVar("T")
@@ -15,18 +15,31 @@ class BaseRepository(Generic[T]):
         self.session.add(obj)
         return obj
 
-    async def read_by(self, field: str, value: Any) -> Optional[T]:
-        field_attr = getattr(self.model, field)
-        query = select(self.model).where(field_attr == value)
-        result = await self.session.execute(query)
-        return result.scalars().first()
+    async def read(
+        self,
+        field: str | None = None,
+        value: Any | None = None,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[T], int]:
+        query = select(self.model)
+        count_query = select(func.count()).select_from(self.model)
 
-    async def read_all(self, offset: int = 0, limit: int = 20) -> List[T]:
-        query = select(self.model).offset(offset).limit(limit)
-        result = await self.session.execute(query)
-        return result.scalars().all()
+        if field and value is not None:
+            field_attr = getattr(self.model, field)
+            query = query.where(field_attr == value)
+            count_query = count_query.where(field_attr == value)
 
-    async def update_by(self, field: str, value: Any, **update_data) -> Optional[T]:
+        query = query.offset(offset).limit(limit)
+
+        result = await self.session.execute(query)
+        count_result = await self.session.execute(count_query)
+        items: list[T] = result.scalars().all()
+        total_count: int = count_result.scalar_one()
+
+        return items, total_count
+
+    async def update_by(self, field: str, value: Any, **update_data) -> T | None:
         field_attr = getattr(self.model, field)
         query = (
             update(self.model)

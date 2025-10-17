@@ -1,11 +1,8 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
 
+from app.models import Base
 from app.models.mixins import TimestampMixin, IdMixin
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 class User(Base, IdMixin, TimestampMixin):
