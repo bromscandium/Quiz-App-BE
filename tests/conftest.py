@@ -1,54 +1,65 @@
+import asyncio
+
+import asyncpg
 import pytest_asyncio
-from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.main import app
+from app.models import Base
+from app.unit_of_work.uow import UnitOfWork
+from tests.core.test_db_settings import DbSettings
+
+db_settings = DbSettings()
+
+
+async def _wait_for_postgres(retries=5, delay=1):
+    for _ in range(retries):
+        try:
+            conn = await asyncpg.connect(
+                host=db_settings.host,
+                port=db_settings.port,
+                user=db_settings.user,
+                password=db_settings.password,
+                database=db_settings.db,
+            )
+            await conn.close()
+            return
+        except Exception:
+            await asyncio.sleep(delay)
+    raise ConnectionError("Cannot connect to Postgres")
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_engine():
+    await _wait_for_postgres()
+    engine = create_async_engine(
+        db_settings.url,
+        echo=False,
+        poolclass=NullPool,
+    )
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield engine
+    await engine.dispose()
 
 
 @pytest_asyncio.fixture
-def mock_user_repo():
-    repo = AsyncMock()
-    repo.create = AsyncMock()
-    repo.read_by = AsyncMock(return_value=None)
-    repo.read_all = AsyncMock(return_value=[])
-    repo.update_by = AsyncMock()
-    repo.delete_by = AsyncMock()
-    return repo
+async def uow(test_engine):
+    async_session_factory = async_sessionmaker(
+        test_engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async with UnitOfWork(async_session_factory) as uow:
+        yield uow
 
 
 @pytest_asyncio.fixture
-def mock_refresh_token_repo():
-    repo = AsyncMock()
-    repo.create = AsyncMock()
-    repo.read_by = AsyncMock(return_value=None)
-    repo.update_by = AsyncMock()
-    repo.delete_by = AsyncMock()
-    return repo
-
-
-@pytest_asyncio.fixture
-def mock_uow(mock_user_repo, mock_refresh_token_repo):
-    uow = AsyncMock()
-    uow.users = mock_user_repo
-    uow.refresh_tokens = mock_refresh_token_repo
-    uow.commit = AsyncMock()
-    uow.rollback = AsyncMock()
-    uow.__aenter__ = AsyncMock(return_value=uow)
-    uow.__aexit__ = AsyncMock(return_value=None)
-    return uow
-
-
-@pytest_asyncio.fixture()
-def mock_redis():
-    redis = AsyncMock()
-    with patch("app.db.redis.RedisClient.redis_client", new=redis):
-        yield redis
-
-
-@pytest_asyncio.fixture
-async def client():
-    with patch("app.dependencies.auth0_dependency.Auth0Dependency"):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            yield ac
+async def async_client(uow):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
