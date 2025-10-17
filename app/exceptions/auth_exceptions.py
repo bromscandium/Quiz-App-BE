@@ -1,47 +1,41 @@
 from fastapi import HTTPException, status
 
 
-class InvalidCredentialsException(HTTPException):
-    def __init__(
-        self,
-        detail: str = "Invalid email or password",
-        status_code: int = status.HTTP_401_UNAUTHORIZED,
-    ):
+class AuthException(HTTPException):
+    def __init__(self, detail: str, status_code: int = status.HTTP_401_UNAUTHORIZED):
         super().__init__(status_code=status_code, detail=detail)
 
 
-class InvalidRefreshTokenWhileGenerating(HTTPException):
-    def __init__(
-        self,
-        detail: str = "Invalid refresh token",
-        status_code: int = status.HTTP_401_UNAUTHORIZED,
-    ):
-        super().__init__(status_code=status_code, detail=detail)
+class InvalidCredentialsException(AuthException):
+    def __init__(self):
+        super().__init__(detail="Invalid email or password")
 
 
-class InvalidTokenType(HTTPException):
-    def __init__(
-        self,
-        detail: str = "Invalid token type",
-        status_code: int = status.HTTP_401_UNAUTHORIZED,
-    ):
-        super().__init__(status_code=status_code, detail=detail)
+class InvalidRefreshTokenWhileGenerating(AuthException):
+    def __init__(self):
+        super().__init__(detail="Invalid refresh token")
 
 
-class AuthError(HTTPException):
-    def __init__(
-        self,
-        detail: str = "Authentication error",
-        status_code: int = status.HTTP_401_UNAUTHORIZED,
-    ):
-        super().__init__(status_code=status_code, detail=detail)
+class InvalidTokenType(AuthException):
+    def __init__(self):
+        super().__init__(detail="Invalid token type")
 
 
-class InvalidTokenFormat(AuthError):
+class AuthError(AuthException):
+    def __init__(self):
+        super().__init__(detail="Authentication error")
+
+
+class InvalidTokenFormat(AuthException):
     def __init__(self):
         super().__init__(detail="Invalid token format")
 
 
-class Auth0UserFetchFailed(AuthError):
+class Auth0UserFetchFailed(AuthException):
     def __init__(self):
         super().__init__(detail="Failed to fetch user info from Auth0")
+
+
+class InvalidTokenHeader(AuthException):
+    def __init__(self):
+        super().__init__(detail="Invalid token header")

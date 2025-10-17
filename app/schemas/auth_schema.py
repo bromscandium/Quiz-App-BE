@@ -1,5 +1,4 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
 
 
 class AuthBase(BaseModel):
@@ -19,4 +18,4 @@ class TokenResponse(AuthBase):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in: Optional[int] = None
+    expires_in: int | None = None
