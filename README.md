@@ -10,78 +10,25 @@ This is the **Python** backend for Quiz App, implemented with **FastAPI**, **Pos
 Quiz-App-BE/
 ├── app/
 │ ├── core/                         # Core settings and configurations for the app
-│ │ ├── __init__.py 
-│ │ ├── app.py 
-│ │ ├── base.py 
-│ │ └── security.py 
 │ ├── db/                           # Modules for database interactions
-│ │ ├── __init__.py 
-│ │ ├── postgres.py
-│ │ └── redis.py
 │ ├── dependencies/                 # Dependencies for backend
-│ │ ├── __init__.py 
-│ │ └── auth0_dependency.py 
 │ ├── exceptions/                   # Custom exceptions
-│ │ ├── __init__.py 
-│ │ ├── auth_exceptions.py
-│ │ ├── health_check.py 
-│ │ ├── refresh_token_exceptions.py
-│ │ └── user_exceptions.py 
 │ ├── models/                       # Models (for instance, User or QuizCard) for managing objects in application
-│ │ ├── __init__.py 
-│ │ ├── base.py
-│ │ ├── mixins.py 
-│ │ ├── refresh_token_model.py
-│ │ └── user_model.py     
 │ ├── repositories/                 # Repositories for database access and data operations
-│ │ ├── __init__.py 
-│ │ ├── base_repository.py 
-│ │ ├── refresh_token_repository.py
-│ │ └── user_repository.py    
 │ ├── routers/                      # Routers for application
-│ │ ├── __init__.py 
-│ │ ├── auth_router.py     
-│ │ ├── health_check.py         
-│ │ └── user_router.py     
 │ ├── schemas/                      # Pydantic schemas for data validation
-│ │ ├── __init__.py 
-│ │ ├── auth_schema.py
-│ │ ├── health_check.py 
-│ │ └── user_schema.py 
 │ ├── services/                     # Business logic and services
-│ │ ├── __init__.py 
-│ │ ├── auth_service.py
-│ │ ├── refresh_token_service.py
-│ │ └── user_service.py 
 │ ├── unit_of_work/                 # Unit of work
-│ │ ├── __init__.py 
-│ │ └── uow.py 
 │ ├── utils/                        # Helper functions and utilities
-│ │ ├── __init__.py 
-│ │ ├── access_token_util.py
-│ │ ├── auth0_util.py
-│ │ ├── logger.py 
-│ │ ├── password_util.py
-│ │ └── password_service.py 
 │ ├── __init__.py 
 │ └── main.py                       # Entry point
 ├── logs/                           # Logs of your applicaion
 ├── migrations/                     # Alembic migrations for database
 ├── secrets/                        # Public and private keys for RSA
 ├── tests/
-│ ├── routers/                      # Router tests
-│ │ ├── __init__.py 
-│ │ ├── test_auth_router.py  
-│ │ ├── test_health_check.py  
-│ │ └── test_user_router.py
-│ ├── services/                     # Unit tests
-│ │ ├── __init__.py 
-│ │ └── test_auth_service.py 
-│ │ └── test_refresh_token_service.py
-│ │ └── test_user_service.py  
+│ ├── services/                     # Services tests
 │ ├── __init__.py 
 │ ├── conftest.py 
-│ ├── factories.py 
 │ └── pytest.ini                    # Initial setup for tests
 ├── .dockerignore 
 ├── .env.sample                     # Example environment variables, without secrets
@@ -92,6 +39,7 @@ Quiz-App-BE/
 ├── Dockerfile                      # Dockerfile for building the app container 
 ├── poetry.lock 
 ├── pyproject.toml                  # Project configuration for Poetry 
+├── alembic.ini  
 └── README.md 
 ```
 
@@ -190,7 +138,7 @@ You should see the `alembic_version` table along with other migrated tables.
 **Run Tests:**
 
 ```bash
-docker-compose exec app poetry run pytest
+docker-compose exec app pytest
 ```
 
 ---

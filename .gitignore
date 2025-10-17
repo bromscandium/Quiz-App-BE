@@ -4,7 +4,7 @@ venv/
 .ssh/
 
 .env
-secrets/private.pem
+secrets/
 scripts/
 *.log
 
