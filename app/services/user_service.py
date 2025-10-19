@@ -17,6 +17,7 @@ from app.exceptions.user_exceptions import (
     UserAlreadyExistsException,
     UserNotFoundException,
     UserInternalErrorException,
+    UnauthorizedUserActionException,
 )
 
 
@@ -88,9 +89,18 @@ class UserService:
 
     @classmethod
     async def update_user(
-        cls, uow: UnitOfWork, user_id: UUID, data: UserUpdateRequest
+        cls,
+        uow: UnitOfWork,
+        user_id: UUID,
+        data: UserUpdateRequest,
+        current_user_id: UUID,
     ) -> UserDetailResponse:
         try:
+            print(user_id)
+            print(current_user_id)
+            if user_id != current_user_id:
+                raise UnauthorizedUserActionException
+
             await cls.get_user_by_id(uow, user_id)
             update_data = data.model_dump(exclude_unset=True)
             if "password" in update_data:
@@ -101,6 +111,8 @@ class UserService:
             user = await uow.users.update_by("id", user_id, **update_data)
             logger.info("User updated")
             return UserDetailResponse.model_validate(user)
+        except UnauthorizedUserActionException:
+            raise UnauthorizedUserActionException
         except IntegrityError:
             logger.exception("DB integrity error while updating user")
             raise UserAlreadyExistsException
@@ -110,13 +122,22 @@ class UserService:
 
     @classmethod
     async def delete_user(
-        cls, uow: UnitOfWork, user_id: UUID, refresh_token_service: RefreshTokenService
+        cls,
+        uow: UnitOfWork,
+        user_id: UUID,
+        refresh_token_service: RefreshTokenService,
+        current_user_id: UUID,
     ) -> None:
         try:
+            if user_id != current_user_id:
+                raise UnauthorizedUserActionException
+
             await cls.get_user_by_id(uow, user_id)
             await refresh_token_service.delete_refresh_token(uow, user_id)
             await uow.users.delete_by("id", user_id)
             logger.info("User deleted")
+        except UnauthorizedUserActionException:
+            raise UnauthorizedUserActionException
         except Exception as e:
             logger.exception(f"Error while deleting user: {e}")
             raise UserInternalErrorException

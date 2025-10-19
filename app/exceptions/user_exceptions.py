@@ -26,6 +26,14 @@ class UserAlreadyExistsException(UserException):
         )
 
 
+class UnauthorizedUserActionException(UserException):
+    def __init__(self):
+        super().__init__(
+            detail="Unathorized Access Of Manipulating User Data",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+
 class UserInternalErrorException(UserException):
     def __init__(self, detail: str = "Internal server error"):
         super().__init__(
