@@ -1,5 +1,6 @@
 from uuid import UUID
 import httpx
+from pydantic.v1 import UUID1
 
 from app.exceptions.auth_exceptions import (
     InvalidCredentialsException,
@@ -8,6 +9,7 @@ from app.exceptions.auth_exceptions import (
     AuthError,
     Auth0UserFetchFailed,
     InvalidTokenFormat,
+    AuthUserFetchFailed,
 )
 from app.exceptions.user_exceptions import UserNotFoundException
 from app.schemas.auth_schema import TokenResponse
@@ -43,6 +45,22 @@ class AuthService:
             raise Auth0UserFetchFailed
 
         return resp.json()
+
+    @classmethod
+    async def fetch_auth_userinfo(cls, token: str) -> UUID:
+        if not token or len(token.split(".")) != 3:
+            raise InvalidTokenFormat
+
+        try:
+            payload = cls.access_token_util.decode_token(token)
+            user_id: UUID = payload.get("sub")
+
+            if user_id is None:
+                raise UserNotFoundException
+        except:
+            raise AuthUserFetchFailed
+
+        return UUID(user_id)
 
     @classmethod
     async def login(

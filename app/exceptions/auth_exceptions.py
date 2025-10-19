@@ -36,6 +36,11 @@ class Auth0UserFetchFailed(AuthException):
         super().__init__(detail="Failed to fetch user info from Auth0")
 
 
+class AuthUserFetchFailed(AuthException):
+    def __init__(self):
+        super().__init__(detail="Failed to authenticate the user")
+
+
 class InvalidTokenHeader(AuthException):
     def __init__(self):
         super().__init__(detail="Invalid token header")
