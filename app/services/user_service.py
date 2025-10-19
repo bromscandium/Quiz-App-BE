@@ -96,8 +96,6 @@ class UserService:
         current_user_id: UUID,
     ) -> UserDetailResponse:
         try:
-            print(user_id)
-            print(current_user_id)
             if user_id != current_user_id:
                 raise UnauthorizedUserActionException
 
