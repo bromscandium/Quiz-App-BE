@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 
 
 class UserBase(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
 
 
 class UserSchema(UserBase):
@@ -24,7 +24,6 @@ class SignUpRequest(UserBase):
 
 
 class UserUpdateRequest(UserBase):
-    email: EmailStr | None = None
     name: str | None = None
     surname: str | None = None
     nickname: str | None = None
