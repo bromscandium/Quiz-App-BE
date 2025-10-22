@@ -1,12 +1,10 @@
 from uuid import UUID
 import httpx
-from pydantic.v1 import UUID1
 
 from app.exceptions.auth_exceptions import (
     InvalidCredentialsException,
     InvalidRefreshTokenWhileGenerating,
     InvalidTokenType,
-    AuthError,
     Auth0UserFetchFailed,
     InvalidTokenFormat,
     AuthUserFetchFailed,
@@ -24,14 +22,14 @@ from app.utils.refresh_token_util import RefreshTokenUtil
 
 
 class AuthService:
-    access_token_util: AccessTokenUtil = AccessTokenUtil()
-    refresh_token_util: RefreshTokenUtil = RefreshTokenUtil()
-    refresh_token_service: RefreshTokenService = RefreshTokenService()
-    user_service: UserService = UserService()
-    password_util: PasswordUtil = PasswordUtil()
+    def __init__(self):
+        self.access_token_util = AccessTokenUtil()
+        self.refresh_token_util = RefreshTokenUtil()
+        self.refresh_token_service = RefreshTokenService()
+        self.user_service = UserService()
+        self.password_util = PasswordUtil()
 
-    @classmethod
-    async def fetch_auth0_userinfo(cls, token: str) -> dict:
+    async def fetch_auth0_userinfo(self, token: str) -> dict:
         if not token or len(token.split(".")) != 3:
             raise InvalidTokenFormat
 
@@ -46,13 +44,12 @@ class AuthService:
 
         return resp.json()
 
-    @classmethod
-    async def fetch_auth_userinfo(cls, token: str) -> UUID:
+    async def fetch_auth_userinfo(self, token: str) -> UUID:
         if not token or len(token.split(".")) != 3:
             raise InvalidTokenFormat
 
         try:
-            payload = cls.access_token_util.decode_token(token)
+            payload = self.access_token_util.decode_token(token)
             user_id: UUID = payload.get("sub")
 
             if user_id is None:
@@ -62,19 +59,18 @@ class AuthService:
 
         return UUID(user_id)
 
-    @classmethod
     async def login(
-        cls, uow: UnitOfWork, email: str, password: str
+        self, uow: UnitOfWork, email: str, password: str
     ) -> TokenResponse | None:
-        user: UserDetailResponse = await cls.user_service.get_user_by_email(uow, email)
+        user: UserDetailResponse = await self.user_service.get_user_by_email(uow, email)
         if not user:
             return None
 
-        if not cls.password_util.verify_password(password, user.hashed_password):
+        if not self.password_util.verify_password(password, user.hashed_password):
             return None
 
-        access_token = cls.access_token_util.create_access_token(str(user.id))
-        refresh_token = await cls.refresh_token_service.create_refresh_token(
+        access_token = self.access_token_util.create_access_token(str(user.id))
+        refresh_token = await self.refresh_token_service.create_refresh_token(
             uow, user.id
         )
 
@@ -82,17 +78,16 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=cls.access_token_util.access_expire_minutes * 60,
+            expires_in=self.access_token_util.access_expire_minutes * 60,
         )
 
-    @classmethod
-    async def auth0_login(cls, uow: UnitOfWork, auth0_user: dict) -> TokenResponse:
+    async def auth0_login(self, uow: UnitOfWork, auth0_user: dict) -> TokenResponse:
         email = auth0_user.get("email") or auth0_user.get("https://quizapp.com/email")
         auth0_sub = auth0_user.get("sub")
         if not email:
             raise InvalidCredentialsException
 
-        user: UserDetailResponse | None = await cls.user_service.get_user_by_email(
+        user: UserDetailResponse | None = await self.user_service.get_user_by_email(
             uow, email
         )
         if not user:
@@ -103,11 +98,11 @@ class AuthService:
                 nickname=auth0_user.get("nickname", email.split("@")[0]),
                 password=auth0_sub,
             )
-            await cls.user_service.create_user(uow, user_data)
-            user = await cls.user_service.get_user_by_email(uow, email)
+            await self.user_service.create_user(uow, user_data)
+            user = await self.user_service.get_user_by_email(uow, email)
 
-        access_token = cls.access_token_util.create_access_token(str(user.id))
-        refresh_token = await cls.refresh_token_service.create_refresh_token(
+        access_token = self.access_token_util.create_access_token(str(user.id))
+        refresh_token = await self.refresh_token_service.create_refresh_token(
             uow, user.id
         )
 
@@ -115,36 +110,35 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=cls.access_token_util.access_expire_minutes * 60,
+            expires_in=self.access_token_util.access_expire_minutes * 60,
         )
 
-    @classmethod
-    async def refresh(cls, uow: UnitOfWork, old_refresh_token: str) -> TokenResponse:
-        token_obj = await cls.refresh_token_service.verify_refresh_token(
+    async def refresh(self, uow: UnitOfWork, old_refresh_token: str) -> TokenResponse:
+        token_obj = await self.refresh_token_service.verify_refresh_token(
             uow, old_refresh_token
         )
         if not token_obj:
             raise InvalidRefreshTokenWhileGenerating
 
-        new_refresh_token = await cls.refresh_token_service.rotate_refresh_token(
+        new_refresh_token = await self.refresh_token_service.rotate_refresh_token(
             uow, old_refresh_token, token_obj.user_id
         )
-        access_token = cls.access_token_util.create_access_token(str(token_obj.user_id))
+        access_token = self.access_token_util.create_access_token(
+            str(token_obj.user_id)
+        )
 
         return TokenResponse(
             access_token=access_token,
             refresh_token=new_refresh_token,
             token_type="bearer",
-            expires_in=cls.access_token_util.access_expire_minutes * 60,
+            expires_in=self.access_token_util.access_expire_minutes * 60,
         )
 
-    @classmethod
-    async def logout(cls, uow: UnitOfWork, refresh_token: str) -> None:
-        await cls.refresh_token_service.revoke_refresh_token(uow, refresh_token)
+    async def logout(self, uow: UnitOfWork, refresh_token: str) -> None:
+        await self.refresh_token_service.revoke_refresh_token(uow, refresh_token)
 
-    @classmethod
-    async def me(cls, uow: UnitOfWork, access_token: str) -> UserDetailResponse:
-        payload = cls.access_token_util.decode_token(access_token)
+    async def me(self, uow: UnitOfWork, access_token: str) -> UserDetailResponse:
+        payload = self.access_token_util.decode_token(access_token)
         if payload.get("type") != "access":
             raise InvalidTokenType
 
@@ -152,7 +146,7 @@ class AuthService:
         if not user_id:
             raise InvalidTokenType
 
-        user = await cls.user_service.get_user_by_id(uow, UUID(user_id))
+        user = await self.user_service.get_user_by_id(uow, UUID(user_id))
         if not user:
             raise UserNotFoundException
 
