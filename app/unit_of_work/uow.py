@@ -1,15 +1,21 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.repositories.company_repository import CompanyRepository
-from app.repositories.refresh_token_repository import RefreshTokenRepository
-from app.repositories.user_repository import UserRepository
+from app.repositories.company import CompanyRepository
+from app.repositories.invitation import InvitationRepository
+from app.repositories.membership import MembershipRepository
+from app.repositories.refresh_token import RefreshTokenRepository
+from app.repositories.request import RequestRepository
+from app.repositories.user import UserRepository
 
 
 class UnitOfWork:
     users: UserRepository
     refresh_tokens: RefreshTokenRepository
     company: CompanyRepository
+    invitation: InvitationRepository
+    membership: MembershipRepository
+    request: RequestRepository
     session: AsyncSession | None = None
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
@@ -20,6 +26,9 @@ class UnitOfWork:
         self.users = UserRepository(self.session)
         self.refresh_tokens = RefreshTokenRepository(self.session)
         self.company = CompanyRepository(self.session)
+        self.invitation = InvitationRepository(self.session)
+        self.membership = MembershipRepository(self.session)
+        self.request = RequestRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
