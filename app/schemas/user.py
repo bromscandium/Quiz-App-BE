@@ -1,41 +1,50 @@
+from datetime import datetime
 from uuid import UUID
-from pydantic import EmailStr, BaseModel
+from pydantic import EmailStr
 
 from app.schemas.base import Base
-from app.schemas.mixins import TimeStamp
 
 
 class UserSchema(Base):
     id: UUID
-    email: EmailStr
     name: str
     surname: str | None = None
     nickname: str
-
-
-class UserCreateRequest(Base):
     email: EmailStr
+    hashed_password: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class UserCreate(Base):
     name: str
     surname: str | None = None
     nickname: str
+    email: EmailStr
     password: str
 
 
-class UserUpdateRequest(Base):
+class UserUpdate(Base):
     name: str | None = None
     surname: str | None = None
     nickname: str | None = None
     password: str | None = None
 
 
-class UsersListResponse(Base):
+class UsersList(Base):
     users: list[UserSchema] = []
     total: int = 0
 
 
-class UserDetailResponse(UserSchema, TimeStamp):
-    picture: str | None = None
-    permissions: list[str] = []
-    scope: list[str] = []
-    email_verified: bool | None = None
-    hashed_password: str = ""
+class UserOwnedCompany(Base):
+    id: UUID
+    name: str
+    description: str | None = None
+    visibility: bool
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class UserOwnedCompaniesList(Base):
+    companies: list[UserOwnedCompany] = []
+    total: int = 0

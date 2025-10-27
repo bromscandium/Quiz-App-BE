@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from uuid import UUID
 
-from app.schemas.user import UserDetailResponse
+from fastapi import APIRouter, Depends, status
+
+from app.dependencies.auth_token import get_auth_user_from_token
+from app.schemas.user import UserSchema
 from app.schemas.auth import LoginRequest, TokenResponse, TokenRequest
 from app.unit_of_work.uow import UnitOfWork
-from app.dependencies.auth0 import get_auth0_user_from_token
+from app.dependencies.auth0_token import get_auth0_user_from_token
 from app.dependencies.uow import get_uow
 from app.services.auth import AuthService
 
@@ -34,23 +36,20 @@ async def oauth_login(
 @router.post("/refresh", response_model=TokenResponse, status_code=status.HTTP_200_OK)
 async def refresh(
     data: TokenRequest,
-    uow: UnitOfWork = Depends(get_uow),
 ) -> TokenResponse:
-    return await auth_service.refresh(uow, data.refresh_token)
+    return await auth_service.refresh(data.refresh_token)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     data: TokenRequest,
-    uow: UnitOfWork = Depends(get_uow),
 ) -> None:
-    await auth_service.logout(uow, data.refresh_token)
+    await auth_service.logout(data.refresh_token)
 
 
-@router.get("/me", response_model=UserDetailResponse, status_code=status.HTTP_200_OK)
+@router.get("/me", response_model=UserSchema, status_code=status.HTTP_200_OK)
 async def me(
-    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+    user_id: UUID = Depends(get_auth_user_from_token),
     uow: UnitOfWork = Depends(get_uow),
-) -> UserDetailResponse:
-    access_token = credentials.credentials
-    return await auth_service.me(uow, access_token)
+) -> UserSchema:
+    return await auth_service.me(uow, user_id)

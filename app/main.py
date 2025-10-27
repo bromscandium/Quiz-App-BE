@@ -11,8 +11,7 @@ from app.routers.user import router as user_router
 from app.routers.auth import router as auth_router
 from app.routers.company import router as company_router
 from app.routers.membership import router as membership_router
-from app.routers.request import router as request_router
-from app.routers.invitation import router as invitation_router
+from app.routers.company_actions import router as company_actions_router
 
 
 @asynccontextmanager
@@ -42,8 +41,8 @@ app.include_router(user_router, tags=["users"])
 app.include_router(auth_router, tags=["auth"])
 app.include_router(company_router, tags=["companies"])
 app.include_router(membership_router, tags=["memberships"])
-app.include_router(request_router, tags=["requests"])
-app.include_router(invitation_router, tags=["invitations"])
+
+app.include_router(company_actions_router, tags=["company_actions"])
 
 
 def start():

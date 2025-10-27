@@ -1,34 +1,61 @@
 from datetime import datetime
 from uuid import UUID
 
+from app.enums.roles import Roles
+from app.schemas.company import CompanySchema
+from app.schemas.user import UserSchema
+
 from app.schemas.base import Base
-from app.models.enums import Roles
-from app.schemas.mixins import TimeStamp
 
 
 class MembershipSchema(Base):
     id: UUID
-    company_id: UUID
+    user: UserSchema | None = None
+    company: CompanySchema | None = None
+    role: Roles
+    is_active: bool
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class MembershipCreate(Base):
     user_id: UUID
-
-
-class MembershipCreateRequest(MembershipSchema):
+    company_id: UUID
     role: Roles = Roles.MEMBER
     is_active: bool = True
 
 
-class MembershipUpdateRequest(Base):
+class MembershipUpdate(Base):
     role: Roles
     is_active: bool | None = None
-    left_at: datetime | None = None
 
 
-class MembershipListResponse(Base):
-    memberships: list[MembershipSchema] = []
+class MembershipsList(Base):
     total: int = 0
+    active_total: int = 0
 
 
-class MembershipDetailResponse(MembershipSchema, TimeStamp):
+class UserMembership(Base):
+    id: UUID
+    company: CompanySchema | None = None
     role: Roles
-    is_active: bool | None = None
-    left_at: datetime | None = None
+    is_active: bool
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class UserMembershipsList(MembershipsList):
+    memberships: list[UserMembership] = []
+
+
+class CompanyMembership(Base):
+    id: UUID
+    user: UserSchema | None = None
+    role: Roles
+    is_active: bool
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class CompanyMembershipsList(MembershipsList):
+    memberships: list[CompanyMembership] = []

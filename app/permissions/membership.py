@@ -1,17 +1,18 @@
-from fastapi import Depends
 from uuid import UUID
-
 from app.unit_of_work.uow import UnitOfWork
-from app.exceptions.user import UnauthorizedUserActionException
+from app.exceptions.company import NotOwnerOfCompany
 
 
 async def check_owner_permission(
     current_user_id: UUID,
-    uow: UnitOfWork = Depends(),
+    uow: UnitOfWork,
+    company_id: UUID,
 ) -> bool:
-    companies, _ = await uow.company.read(field="owner_id", value=current_user_id)
+    company, _ = await uow.company.read(field="id", value=company_id, offset=0, limit=1)
 
-    if not companies:
-        raise UnauthorizedUserActionException
+    is_owner = bool(company and company[0].owner_id == current_user_id)
 
-    return True
+    if not is_owner:
+        raise NotOwnerOfCompany
+
+    return is_owner

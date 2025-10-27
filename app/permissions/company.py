@@ -10,7 +10,4 @@ async def check_company_visibility(
 ) -> bool:
     company, _ = await uow.company.read(field="id", value=company_id, offset=0, limit=1)
 
-    if company[0].visibility is False:
-        return False
-
-    return True
+    return company[0].visibility

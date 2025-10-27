@@ -4,8 +4,7 @@ from alembic import op
 import sqlalchemy as sa
 import sqlmodel
 
-
-revision: str = "8adc00a7e9ed"
+revision: str = "7b2c7d7cd11b"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -49,45 +48,21 @@ def upgrade() -> None:
         op.f("ix_companies_visibility"), "companies", ["visibility"], unique=False
     )
     op.create_table(
-        "refresh_tokens",
+        "company_actions",
+        sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("user_id", sa.UUID(), nullable=False),
-        sa.Column("token_hash", sa.String(length=512), nullable=False),
-        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("revoked", sa.Boolean(), nullable=False),
-        sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_refresh_tokens_expires_at"),
-        "refresh_tokens",
-        ["expires_at"],
-        unique=False,
-    )
-    op.create_index(op.f("ix_refresh_tokens_id"), "refresh_tokens", ["id"], unique=True)
-    op.create_index(
-        op.f("ix_refresh_tokens_token_hash"),
-        "refresh_tokens",
-        ["token_hash"],
-        unique=True,
-    )
-    op.create_index(
-        op.f("ix_refresh_tokens_user_id"), "refresh_tokens", ["user_id"], unique=False
-    )
-    op.create_table(
-        "invitations",
-        sa.Column("invited_email", sa.String(), nullable=True),
-        sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("company_id", sa.UUID(), nullable=False),
-        sa.Column("user_id", sa.UUID(), nullable=True),
         sa.Column(
-            "status",
-            sa.Enum("PENDING", "ACCEPTED", "DECLINED", "CANCELLED", name="status"),
+            "action_type",
+            sa.Enum("REQUEST", "INVITATION", name="action_type"),
             nullable=False,
         ),
-        sa.Column("decision_time", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("invited_email", sa.String(length=320), nullable=True),
+        sa.Column(
+            "status",
+            sa.Enum("PENDING", "ACCEPTED", "CANCELLED", name="status"),
+            nullable=False,
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["company_id"], ["companies.id"], ondelete="CASCADE"),
@@ -95,32 +70,38 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        op.f("ix_invitations_company_id"), "invitations", ["company_id"], unique=False
-    )
-    op.create_index(op.f("ix_invitations_id"), "invitations", ["id"], unique=True)
-    op.create_index(
-        op.f("ix_invitations_invited_email"),
-        "invitations",
-        ["invited_email"],
+        op.f("ix_company_actions_action_type"),
+        "company_actions",
+        ["action_type"],
         unique=False,
     )
     op.create_index(
-        op.f("ix_invitations_status"), "invitations", ["status"], unique=False
+        op.f("ix_company_actions_company_id"),
+        "company_actions",
+        ["company_id"],
+        unique=False,
     )
     op.create_index(
-        op.f("ix_invitations_user_id"), "invitations", ["user_id"], unique=False
+        op.f("ix_company_actions_invited_email"),
+        "company_actions",
+        ["invited_email"],
+        unique=True,
+    )
+    op.create_index(
+        op.f("ix_company_actions_status"), "company_actions", ["status"], unique=False
+    )
+    op.create_index(
+        op.f("ix_company_actions_user_id"), "company_actions", ["user_id"], unique=False
     )
     op.create_table(
         "memberships",
+        sa.Column("user_id", sa.UUID(), nullable=False),
+        sa.Column("company_id", sa.UUID(), nullable=False),
         sa.Column(
             "role", sa.Enum("OWNER", "ADMIN", "MEMBER", name="role"), nullable=False
         ),
-        sa.Column("joined_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("left_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("company_id", sa.UUID(), nullable=False),
-        sa.Column("user_id", sa.UUID(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["company_id"], ["companies.id"], ondelete="CASCADE"),
@@ -138,54 +119,23 @@ def upgrade() -> None:
     op.create_index(
         op.f("ix_memberships_user_id"), "memberships", ["user_id"], unique=False
     )
-    op.create_table(
-        "requests",
-        sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column(
-            "status",
-            sa.Enum("PENDING", "ACCEPTED", "DECLINED", "CANCELLED", name="status"),
-            nullable=False,
-        ),
-        sa.Column("decision_time", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("company_id", sa.UUID(), nullable=False),
-        sa.Column("user_id", sa.UUID(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(["company_id"], ["companies.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_requests_company_id"), "requests", ["company_id"], unique=False
-    )
-    op.create_index(op.f("ix_requests_id"), "requests", ["id"], unique=True)
-    op.create_index(op.f("ix_requests_status"), "requests", ["status"], unique=False)
-    op.create_index(op.f("ix_requests_user_id"), "requests", ["user_id"], unique=False)
 
 
 def downgrade() -> None:
-    op.drop_index(op.f("ix_requests_user_id"), table_name="requests")
-    op.drop_index(op.f("ix_requests_status"), table_name="requests")
-    op.drop_index(op.f("ix_requests_id"), table_name="requests")
-    op.drop_index(op.f("ix_requests_company_id"), table_name="requests")
-    op.drop_table("requests")
     op.drop_index(op.f("ix_memberships_user_id"), table_name="memberships")
     op.drop_index(op.f("ix_memberships_role"), table_name="memberships")
     op.drop_index(op.f("ix_memberships_is_active"), table_name="memberships")
     op.drop_index(op.f("ix_memberships_id"), table_name="memberships")
     op.drop_index(op.f("ix_memberships_company_id"), table_name="memberships")
     op.drop_table("memberships")
-    op.drop_index(op.f("ix_invitations_user_id"), table_name="invitations")
-    op.drop_index(op.f("ix_invitations_status"), table_name="invitations")
-    op.drop_index(op.f("ix_invitations_invited_email"), table_name="invitations")
-    op.drop_index(op.f("ix_invitations_id"), table_name="invitations")
-    op.drop_index(op.f("ix_invitations_company_id"), table_name="invitations")
-    op.drop_table("invitations")
-    op.drop_index(op.f("ix_refresh_tokens_user_id"), table_name="refresh_tokens")
-    op.drop_index(op.f("ix_refresh_tokens_token_hash"), table_name="refresh_tokens")
-    op.drop_index(op.f("ix_refresh_tokens_id"), table_name="refresh_tokens")
-    op.drop_index(op.f("ix_refresh_tokens_expires_at"), table_name="refresh_tokens")
-    op.drop_table("refresh_tokens")
+    op.drop_index(op.f("ix_company_actions_user_id"), table_name="company_actions")
+    op.drop_index(op.f("ix_company_actions_status"), table_name="company_actions")
+    op.drop_index(
+        op.f("ix_company_actions_invited_email"), table_name="company_actions"
+    )
+    op.drop_index(op.f("ix_company_actions_company_id"), table_name="company_actions")
+    op.drop_index(op.f("ix_company_actions_action_type"), table_name="company_actions")
+    op.drop_table("company_actions")
     op.drop_index(op.f("ix_companies_visibility"), table_name="companies")
     op.drop_index(op.f("ix_companies_owner_id"), table_name="companies")
     op.drop_index(op.f("ix_companies_id"), table_name="companies")

@@ -1,24 +1,37 @@
-from sqlalchemy import DateTime, func, Boolean
-from sqlalchemy.orm import mapped_column, Mapped
+import uuid
+
+from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy.types import Enum as SQLAEnum
-from app.models import Base
-from app.models.enums import Roles
-from app.models.mixins import TimestampMixin, IdMixin, CompanyUserMixin
+from app.models import Base, User, Company
+from app.enums.roles import Roles
 
 
-class Membership(Base, IdMixin, CompanyUserMixin, TimestampMixin):
+class Membership(Base):
     __tablename__ = "memberships"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     role: Mapped[Roles] = mapped_column(
         SQLAEnum(Roles, name="role"), default=Roles.MEMBER, nullable=False, index=True
     )
-    joined_at: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True), default=func.now(), nullable=False
-    )
-    left_at: Mapped[DateTime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, index=True
     )
+
+    user: Mapped["User"] = relationship(back_populates="memberships")
+
+    company: Mapped["Company"] = relationship(back_populates="memberships")

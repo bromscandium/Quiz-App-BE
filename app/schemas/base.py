@@ -1,5 +1,5 @@
-from pydantic import ConfigDict, BaseModel
+from pydantic import BaseModel
 
 
 class Base(BaseModel):
-    model_config = ConfigDict(from_attributes=True, extra="forbid")
+    model_config = {"from_attributes": True}

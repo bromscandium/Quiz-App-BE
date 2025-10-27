@@ -2,15 +2,11 @@ from fastapi import HTTPException, status
 
 
 class UserException(HTTPException):
-    def __init__(
-        self,
-        detail: str = "User error",
-        status_code: int = status.HTTP_400_BAD_REQUEST,
-    ):
+    def __init__(self, detail: str, status_code: int = status.HTTP_400_BAD_REQUEST):
         super().__init__(status_code=status_code, detail=detail)
 
 
-class UserNotFoundException(UserException):
+class UserNotFound(UserException):
     def __init__(self):
         super().__init__(
             detail="User not found",
@@ -18,7 +14,7 @@ class UserNotFoundException(UserException):
         )
 
 
-class UserAlreadyExistsException(UserException):
+class UserAlreadyExists(UserException):
     def __init__(self):
         super().__init__(
             detail="User already exists",
@@ -26,7 +22,7 @@ class UserAlreadyExistsException(UserException):
         )
 
 
-class UnauthorizedUserActionException(UserException):
+class UnauthorizedUserAction(UserException):
     def __init__(self):
         super().__init__(
             detail="Unathorized Access Of Manipulating User Data",
@@ -34,9 +30,8 @@ class UnauthorizedUserActionException(UserException):
         )
 
 
-class UserInternalErrorException(UserException):
-    def __init__(self, detail: str = "Internal server error"):
+class RequestNotFound(UserException):
+    def __init__(self):
         super().__init__(
-            detail=detail,
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invitation not found", status_code=status.HTTP_404_NOT_FOUND
         )

@@ -6,16 +6,22 @@ class CompanyException(HTTPException):
         super().__init__(status_code=status_code, detail=detail)
 
 
-class CompanyNotFoundException(CompanyException):
+class CompanyNotFound(CompanyException):
     def __init__(self):
         super().__init__(
             detail="Company not found", status_code=status.HTTP_404_NOT_FOUND
         )
 
 
-class CompanyInternalErrorException(CompanyException):
-    def __init__(self, detail: str = "Internal server error"):
+class InvitationNotFound(CompanyException):
+    def __init__(self):
         super().__init__(
-            detail=detail,
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invitation not found", status_code=status.HTTP_404_NOT_FOUND
+        )
+
+
+class NotOwnerOfCompany(CompanyException):
+    def __init__(self):
+        super().__init__(
+            detail="Not Owner of Company", status_code=status.HTTP_403_FORBIDDEN
         )

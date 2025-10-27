@@ -1,17 +1,9 @@
-from datetime import timedelta
-
 import pytest
 from uuid import uuid4
 from app.services.auth import AuthService
-from app.schemas.user import UserCreateRequest
-from app.exceptions.auth import (
-    InvalidRefreshTokenWhileGenerating,
-)
-from app.exceptions.user import (
-    UserInternalErrorException,
-    UserNotFoundException,
-)
-from app.utils.access_token import AccessTokenUtil
+from app.schemas.user import UserCreate
+from app.exceptions.auth import InvalidRefreshToken, InvalidTokenFormat
+from app.exceptions.user import UserNotFound
 
 auth_service = AuthService()
 
@@ -19,7 +11,7 @@ auth_service = AuthService()
 @pytest.mark.asyncio
 class TestAuthService:
     async def test_login_success(self, uow):
-        user_data = UserCreateRequest(
+        user_data = UserCreate(
             name="John",
             surname="Doe",
             nickname="johndoe",
@@ -48,7 +40,7 @@ class TestAuthService:
         assert token_response is None
 
     async def test_me_success(self, uow):
-        user_data = UserCreateRequest(
+        user_data = UserCreate(
             name="Jane",
             surname="Smith",
             nickname="janesmith",
@@ -57,49 +49,56 @@ class TestAuthService:
         )
         user = await auth_service.user_service.create_user(uow, user_data)
 
-        login_response = await auth_service.login(
-            uow, "jane.smith@example.com", "AnotherPass456!"
-        )
-        me_user = await auth_service.me(uow, login_response.access_token)
+        me_user = await auth_service.me(uow, user.id)
 
         assert me_user.id == user.id
         assert me_user.email == user.email
 
-    async def test_me_invalid_token_type(self, uow):
-        from pytest import raises
-
-        token_util = AccessTokenUtil()
-        token = token_util._create_token(str(uuid4()), delta=timedelta(minutes=1))
-        with raises(UserNotFoundException):
-            await auth_service.me(uow, token)
-
     async def test_me_user_not_found(self, uow):
         from pytest import raises
 
-        token_util = AccessTokenUtil()
-        token = token_util._create_token(str(uuid4()), delta=timedelta(seconds=10))
-        with raises(UserNotFoundException):
-            await auth_service.me(uow, token)
-
-    async def test_refresh_success(self, uow):
-        user_data = UserCreateRequest(
-            name="Jake",
-            surname="Peralta",
-            nickname="jakeperalta",
-            email="jake@example.com",
-            password="N1neNine!",
-        )
-        await auth_service.user_service.create_user(uow, user_data)
-        login_resp = await auth_service.login(uow, "jake@example.com", "N1neNine!")
-        old_refresh_token = login_resp.refresh_token
-
-        refreshed = await auth_service.refresh(uow, old_refresh_token)
-        assert refreshed.access_token
-        assert refreshed.refresh_token
-        assert refreshed.refresh_token != old_refresh_token
+        with raises(UserNotFound):
+            await auth_service.me(uow, uuid4())
 
     async def test_refresh_invalid_token(self, uow):
         from pytest import raises
 
-        with raises(InvalidRefreshTokenWhileGenerating):
-            await auth_service.refresh(uow, "invalid_refresh_token")
+        with raises(InvalidRefreshToken):
+            await auth_service.refresh("invalid_refresh_token")
+
+    async def test_fetch_auth_userinfo_success(self, uow):
+        user_data = UserCreate(
+            name="Amy",
+            surname="Santiago",
+            nickname="amysantiago",
+            email="amy@example.com",
+            password="BinderPass123!",
+        )
+        user = await auth_service.user_service.create_user(uow, user_data)
+
+        tokens = auth_service.auth_token.create_tokens(str(user.id))
+        access_token = tokens["access_token"]
+
+        user_id = await auth_service.fetch_auth_userinfo(access_token)
+        assert user_id == user.id
+
+    async def test_fetch_auth_userinfo_invalid_format(self, uow):
+        from pytest import raises
+
+        with raises(InvalidTokenFormat):
+            await auth_service.fetch_auth_userinfo("invalid_token")
+
+    async def test_logout(self, uow):
+        user_data = UserCreate(
+            name="Terry",
+            surname="Jeffords",
+            nickname="terryjeffords",
+            email="terry@example.com",
+            password="YogurtLove99!",
+        )
+        user = await auth_service.user_service.create_user(uow, user_data)
+
+        tokens = auth_service.auth_token.create_tokens(str(user.id))
+        access_token = tokens["access_token"]
+
+        await auth_service.logout(access_token)

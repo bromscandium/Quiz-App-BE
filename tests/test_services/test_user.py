@@ -2,11 +2,10 @@ import pytest
 from uuid import uuid4
 
 from app.services.user import UserService
-from app.schemas.user import UserCreateRequest, UserUpdateRequest
+from app.schemas.user import UserCreate, UserUpdate
 from app.exceptions.user import (
-    UserAlreadyExistsException,
-    UserInternalErrorException,
-    UnauthorizedUserActionException,
+    UserAlreadyExists,
+    UnauthorizedUserAction,
 )
 
 user_service = UserService()
@@ -16,7 +15,7 @@ user_service = UserService()
 class TestUserService:
     @pytest.fixture
     def valid_user_data(self):
-        return UserCreateRequest(
+        return UserCreate(
             name="John",
             surname="Doe",
             nickname="johndoe",
@@ -26,7 +25,7 @@ class TestUserService:
 
     @pytest.fixture
     def another_user_data(self):
-        return UserCreateRequest(
+        return UserCreate(
             name="Jane",
             surname="Smith",
             nickname="janesmith",
@@ -47,38 +46,38 @@ class TestUserService:
 
     async def test_create_user_duplicate_email(self, uow, valid_user_data):
         await user_service.create_user(uow, valid_user_data)
-        duplicate_data = UserCreateRequest(
+        duplicate_data = UserCreate(
             name="Another",
             surname="User",
             nickname="anotheruser",
             email=valid_user_data.email,
             password="Password123!",
         )
-        with pytest.raises(UserAlreadyExistsException):
+        with pytest.raises(UserAlreadyExists):
             await user_service.create_user(uow, duplicate_data)
 
     async def test_get_user_by_id_success(self, uow, valid_user_data):
         created_user = await user_service.create_user(uow, valid_user_data)
-        fetched_user = await user_service.get_user_by_id(uow, created_user.id)
+        fetched_user = await user_service.read_user_by_id(uow, created_user.id)
         assert fetched_user.id == created_user.id
         assert fetched_user.email == valid_user_data.email
         assert fetched_user.name == valid_user_data.name
 
     async def test_get_user_by_id_not_found(self, uow):
         non_existent_id = uuid4()
-        user = await user_service.get_user_by_id(uow, non_existent_id)
+        user = await user_service.read_user_by_id(uow, non_existent_id)
 
         assert user is None
 
     async def test_get_user_by_email_success(self, uow, valid_user_data):
         await user_service.create_user(uow, valid_user_data)
-        fetched_user = await user_service.get_user_by_email(uow, valid_user_data.email)
+        fetched_user = await user_service.read_user_by_email(uow, valid_user_data.email)
         assert fetched_user is not None
         assert fetched_user.email == valid_user_data.email
         assert fetched_user.name == valid_user_data.name
 
     async def test_get_user_by_email_not_found(self, uow):
-        result = await user_service.get_user_by_email(uow, "nonexistent@example.com")
+        result = await user_service.read_user_by_email(uow, "nonexistent@example.com")
         assert result is None
 
     async def test_read_all_users(self, uow, valid_user_data, another_user_data):
@@ -106,7 +105,7 @@ class TestUserService:
 
     async def test_update_user_success(self, uow, valid_user_data):
         created_user = await user_service.create_user(uow, valid_user_data)
-        update_data = UserUpdateRequest(name="UpdatedName", surname="UpdatedSurname")
+        update_data = UserUpdate(name="UpdatedName", surname="UpdatedSurname")
 
         updated_user = await user_service.update_user(
             uow, created_user.id, update_data, created_user.id
@@ -120,7 +119,7 @@ class TestUserService:
     async def test_update_user_password(self, uow, valid_user_data):
         created_user = await user_service.create_user(uow, valid_user_data)
         original_password_hash = created_user.hashed_password
-        update_data = UserUpdateRequest(password="NewSecurePass999!")
+        update_data = UserUpdate(password="NewSecurePass999!")
 
         updated_user = await user_service.update_user(
             uow, created_user.id, update_data, created_user.id
@@ -134,16 +133,16 @@ class TestUserService:
 
         await user_service.delete_user(uow, created_user.id, created_user.id)
 
-        user = await user_service.get_user_by_id(uow, created_user.id)
+        user = await user_service.read_user_by_id(uow, created_user.id)
 
         assert user is None
 
     async def test_update_user_unauthorized(self, uow, valid_user_data):
         created_user = await user_service.create_user(uow, valid_user_data)
         different_user_id = uuid4()
-        update_data = UserUpdateRequest(name="HackedName")
+        update_data = UserUpdate(name="HackedName")
 
-        with pytest.raises(UnauthorizedUserActionException):
+        with pytest.raises(UnauthorizedUserAction):
             await user_service.update_user(
                 uow, created_user.id, update_data, different_user_id
             )
@@ -152,12 +151,12 @@ class TestUserService:
         created_user = await user_service.create_user(uow, valid_user_data)
         different_user_id = uuid4()
 
-        with pytest.raises(UnauthorizedUserActionException):
+        with pytest.raises(UnauthorizedUserAction):
             await user_service.delete_user(uow, created_user.id, different_user_id)
 
     async def test_update_user_multiple_fields(self, uow, valid_user_data):
         created_user = await user_service.create_user(uow, valid_user_data)
-        update_data = UserUpdateRequest(
+        update_data = UserUpdate(
             name="NewName", surname="NewSurname", nickname="newnick"
         )
 

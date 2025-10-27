@@ -1,16 +1,19 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from uuid import UUID
-from fastapi import Query
+
+from app.enums.roles import Roles
 from starlette import status
 
-from app.dependencies.auth import get_auth_user_from_token
+from app.dependencies.auth_token import get_auth_user_from_token
 from app.dependencies.uow import get_uow
 from app.schemas.membership import (
-    MembershipCreateRequest,
-    MembershipUpdateRequest,
-    MembershipDetailResponse,
-    MembershipListResponse,
+    MembershipSchema,
+    MembershipCreate,
+    MembershipUpdate,
+    UserMembershipsList,
+    CompanyMembershipsList,
 )
+
 from app.unit_of_work.uow import UnitOfWork
 from app.services.membership import MembershipService
 
@@ -18,97 +21,89 @@ membership_service = MembershipService()
 router = APIRouter(prefix="/memberships", tags=["memberships"])
 
 
-@router.post(
-    "/", response_model=MembershipDetailResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=MembershipSchema, status_code=status.HTTP_201_CREATED)
 async def create_membership(
-    data: MembershipCreateRequest,
+    data: MembershipCreate,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id=Depends(get_auth_user_from_token),
-) -> MembershipDetailResponse:
-    return await membership_service.create_membership(uow, data, current_user_id)
+) -> MembershipSchema:
+    return await membership_service.create_membership(uow, data)
 
 
 @router.get(
-    "/{membership_id}",
-    response_model=MembershipDetailResponse,
+    "/id/{membership_id}",
+    response_model=MembershipSchema,
     status_code=status.HTTP_200_OK,
 )
-async def get_membership_by_id(
+async def read_membership_by_id(
     membership_id: UUID, uow: UnitOfWork = Depends(get_uow)
-) -> MembershipDetailResponse:
-    return await membership_service.get_membership_by_id(uow, membership_id)
+) -> MembershipSchema:
+    return await membership_service.read_membership_by_id(uow, membership_id)
 
 
 @router.get(
-    "/user/{user_id}",
-    response_model=MembershipListResponse,
+    "/user/{current_user_id}",
+    response_model=UserMembershipsList,
     status_code=status.HTTP_200_OK,
 )
-async def get_user_memberships(
-    user_id: UUID,
-    offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1),
+async def read_user_memberships(
+    current_user_id: UUID = Depends(get_auth_user_from_token),
+    offset: int = 0,
+    limit: int = 20,
     uow: UnitOfWork = Depends(get_uow),
-) -> MembershipListResponse:
-    return await membership_service.get_user_memberships(uow, user_id, offset, limit)
+) -> UserMembershipsList:
+    return await membership_service.read_user_memberships(
+        uow, current_user_id, offset, limit
+    )
 
 
 @router.get(
     "/company/{company_id}",
-    response_model=MembershipListResponse,
+    response_model=CompanyMembershipsList,
     status_code=status.HTTP_200_OK,
 )
-async def get_company_members(
+async def read_company_members(
     company_id: UUID,
-    offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1),
+    offset: int = 0,
+    limit: int = 20,
+    roles: list[Roles] | None = Query(None),
+    current_user_id: UUID = Depends(get_auth_user_from_token),
     uow: UnitOfWork = Depends(get_uow),
-) -> MembershipListResponse:
-    return await membership_service.get_company_members(uow, company_id, offset, limit)
+) -> CompanyMembershipsList:
+    return await membership_service.read_company_members(
+        uow=uow,
+        current_user_id=current_user_id,
+        company_id=company_id,
+        offset=offset,
+        limit=limit,
+        roles=set(roles) if roles else None,
+    )
 
 
 @router.put(
     "/update/{membership_id}",
-    response_model=MembershipDetailResponse,
+    response_model=MembershipSchema,
     status_code=status.HTTP_200_OK,
 )
 async def update_membership(
     membership_id: UUID,
-    data: MembershipUpdateRequest,
+    data: MembershipUpdate,
     uow: UnitOfWork = Depends(get_uow),
     current_user_id=Depends(get_auth_user_from_token),
-) -> MembershipDetailResponse:
+) -> MembershipSchema:
     return await membership_service.update_membership(
-        uow, membership_id, current_user_id, data
+        uow, membership_id, data, current_user_id
     )
 
 
-@router.put(
-    "/{delete/membership_id}",
-    response_model=MembershipDetailResponse,
-    status_code=status.HTTP_200_OK,
+@router.delete(
+    "/delete/{membership_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_membership(
     membership_id: UUID,
+    current_user_id: UUID = Depends(get_auth_user_from_token),
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id=Depends(get_auth_user_from_token),
-) -> MembershipDetailResponse:
+) -> None:
     return await membership_service.delete_membership(
-        uow, membership_id, current_user_id
-    )
-
-
-@router.put(
-    "/cancel/{membership_id}",
-    response_model=MembershipDetailResponse,
-    status_code=status.HTTP_200_OK,
-)
-async def cancel_membership(
-    membership_id: UUID,
-    uow: UnitOfWork = Depends(get_uow),
-    current_user_id=Depends(get_auth_user_from_token),
-) -> MembershipDetailResponse:
-    return await membership_service.cancel_membership(
-        uow, membership_id, current_user_id
+        uow, current_user_id=current_user_id, membership_id=membership_id
     )

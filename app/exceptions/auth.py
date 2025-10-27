@@ -6,24 +6,14 @@ class AuthException(HTTPException):
         super().__init__(status_code=status_code, detail=detail)
 
 
-class InvalidCredentialsException(AuthException):
+class InvalidCredentials(AuthException):
     def __init__(self):
         super().__init__(detail="Invalid email or password")
 
 
-class InvalidRefreshTokenWhileGenerating(AuthException):
+class InvalidRefreshToken(AuthException):
     def __init__(self):
         super().__init__(detail="Invalid refresh token")
-
-
-class InvalidTokenType(AuthException):
-    def __init__(self):
-        super().__init__(detail="Invalid token type")
-
-
-class AuthError(AuthException):
-    def __init__(self):
-        super().__init__(detail="Authentication error")
 
 
 class InvalidTokenFormat(AuthException):
