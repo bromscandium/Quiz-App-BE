@@ -18,8 +18,8 @@ class IdMixin:
 
 class TimestampMixin:
     created_at: Mapped[DateTime] = mapped_column(
-        DateTime, default=func.now(), nullable=False
+        DateTime(timezone=True), default=func.now(), nullable=False
     )
     updated_at: Mapped[DateTime] = mapped_column(
-        DateTime, default=func.now(), nullable=False
+        DateTime(timezone=True), default=func.now(), nullable=False
     )

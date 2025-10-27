@@ -8,8 +8,6 @@ from sqlalchemy.pool import NullPool
 
 from app.main import app
 from app.models import Base
-from app.schemas.user_schema import SignUpRequest
-from app.services.user_service import UserService
 from app.unit_of_work.uow import UnitOfWork
 from tests.core.test_db_settings import DbSettings
 
@@ -53,22 +51,6 @@ async def test_engine():
 @pytest_asyncio.fixture(scope="function")
 async def async_session_factory(test_engine):
     return async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
-
-
-@pytest_asyncio.fixture
-async def test_user(async_session_factory):
-    user_service = UserService()
-    user_data = SignUpRequest(
-        name="testname",
-        email="testuser@example.com",
-        nickname="testuser",
-        password="Test@1234",
-    )
-
-    async with UnitOfWork(async_session_factory) as uow:
-        user = await user_service.create_user(uow, user_data)
-        await uow.commit()
-        return user
 
 
 @pytest_asyncio.fixture

@@ -1,6 +1,7 @@
 from .base import Base
-from .company_model import Company
-from .user_model import User
-from .refresh_token_model import RefreshToken
+from .user import User
+from .company import Company
+from .company_actions import CompanyActions
+from .membership import Membership
 
-__all__ = ["Base", "User", "RefreshToken", "Company"]
+__all__ = ["Base", "User", "Company", "CompanyActions", "Membership"]
