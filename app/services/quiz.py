@@ -176,16 +176,11 @@ class QuizService:
                 for option in question.answer_options:
                     if option.id:
                         await uow.answer_options.update_by(
-                            "id",
-                            option.id,
-                            text=option.text,
-                            is_correct=option.is_correct,
+                            "id", option.id, **data.model_dump()
                         )
                     else:
                         await uow.answer_options.create(
-                            question_id=new_question.id,
-                            text=option.text,
-                            is_correct=option.is_correct,
+                            question_id=new_question.id, **data.model_dump()
                         )
                         await uow.session.flush()
 

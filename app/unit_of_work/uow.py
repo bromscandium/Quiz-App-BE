@@ -10,6 +10,7 @@ from app.repositories.company import CompanyRepository
 from app.repositories.membership import MembershipRepository
 from app.repositories.company_actions import CompanyActionsRepository
 from app.repositories.user_answer import UserAnswerRepository
+from app.repositories.stats import StatsRepository
 
 
 class UnitOfWork:
@@ -27,6 +28,7 @@ class UnitOfWork:
         self.answer_options = AnswerOptionRepository(self.session)
         self.quiz_attempts = QuizAttemptRepository(self.session)
         self.user_answers = UserAnswerRepository(self.session)
+        self.stats = StatsRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:

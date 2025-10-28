@@ -17,12 +17,10 @@ from app.exceptions.quiz_attempt import (
     UnauthorizedQuizAttempt,
 )
 from app.utils.redis import RedisUtil
-from app.utils.stats import StatsUtil
 
 
 class QuizAttemptService:
     def __init__(self):
-        self.stats = StatsUtil()
         self.redis = RedisUtil()
 
     async def _check_quiz_access(
@@ -225,12 +223,14 @@ class QuizAttemptService:
         company_id: UUID | None = None,
     ) -> UserStats:
         try:
-            result = await self.stats.calculate_stats(
-                uow=uow, user_id=user_id, quiz_id=quiz_id, company_id=company_id
+            result = await uow.stats.calculate_stats(
+                user_id=user_id, quiz_id=quiz_id, company_id=company_id
             )
 
             average_score = (
-                (result.total_correct or 0) / (result.total_questions or 1) * 100
+                round(
+                    (result.total_correct or 0) / (result.total_questions or 1) * 100, 2
+                )
                 if result
                 else 0.0
             )
