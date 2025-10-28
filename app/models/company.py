@@ -28,3 +28,11 @@ class Company(Base):
     company_actions: Mapped[list["CompanyActions"]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )
+
+    quizzes: Mapped[list["Quiz"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+
+    quiz_attempts: Mapped[list["QuizAttempt"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )

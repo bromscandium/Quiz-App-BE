@@ -6,12 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.utils.logger import logger
 from app.core.app import app_settings
 from app.db.redis import RedisClient
-from app.routers.health_check import router as health_router
-from app.routers.user import router as user_router
-from app.routers.auth import router as auth_router
-from app.routers.company import router as company_router
-from app.routers.membership import router as membership_router
-from app.routers.company_actions import router as company_actions_router
+from app.routers import routers
 
 
 @asynccontextmanager
@@ -36,13 +31,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health_router, tags=["health"])
-app.include_router(user_router, tags=["users"])
-app.include_router(auth_router, tags=["auth"])
-app.include_router(company_router, tags=["companies"])
-app.include_router(membership_router, tags=["memberships"])
-
-app.include_router(company_actions_router, tags=["company_actions"])
+for router in routers:
+    app.include_router(router)
 
 
 def start():
