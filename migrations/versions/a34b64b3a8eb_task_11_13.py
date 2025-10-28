@@ -4,7 +4,8 @@ from alembic import op
 import sqlalchemy as sa
 import sqlmodel
 
-revision: str = "7b2c7d7cd11b"
+
+revision: str = "a34b64b3a8eb"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -119,9 +120,141 @@ def upgrade() -> None:
     op.create_index(
         op.f("ix_memberships_user_id"), "memberships", ["user_id"], unique=False
     )
+    op.create_table(
+        "quizzes",
+        sa.Column("company_id", sa.UUID(), nullable=False),
+        sa.Column("title", sa.String(length=200), nullable=False),
+        sa.Column("description", sa.String(length=1000), nullable=True),
+        sa.Column("frequency", sa.Integer(), nullable=False),
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["company_id"], ["companies.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_quizzes_company_id"), "quizzes", ["company_id"], unique=False
+    )
+    op.create_index(op.f("ix_quizzes_id"), "quizzes", ["id"], unique=True)
+    op.create_table(
+        "questions",
+        sa.Column("quiz_id", sa.UUID(), nullable=False),
+        sa.Column("title", sa.String(length=500), nullable=False),
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["quiz_id"], ["quizzes.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("ix_questions_id"), "questions", ["id"], unique=True)
+    op.create_index(
+        op.f("ix_questions_quiz_id"), "questions", ["quiz_id"], unique=False
+    )
+    op.create_table(
+        "quiz_attempts",
+        sa.Column("user_id", sa.UUID(), nullable=False),
+        sa.Column("company_id", sa.UUID(), nullable=False),
+        sa.Column("quiz_id", sa.UUID(), nullable=False),
+        sa.Column("correct_answers", sa.Integer(), nullable=False),
+        sa.Column("total_questions", sa.Integer(), nullable=False),
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["company_id"], ["companies.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["quiz_id"], ["quizzes.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_quiz_attempts_company_id"),
+        "quiz_attempts",
+        ["company_id"],
+        unique=False,
+    )
+    op.create_index(op.f("ix_quiz_attempts_id"), "quiz_attempts", ["id"], unique=True)
+    op.create_index(
+        op.f("ix_quiz_attempts_quiz_id"), "quiz_attempts", ["quiz_id"], unique=False
+    )
+    op.create_index(
+        op.f("ix_quiz_attempts_user_id"), "quiz_attempts", ["user_id"], unique=False
+    )
+    op.create_table(
+        "answer_options",
+        sa.Column("question_id", sa.UUID(), nullable=False),
+        sa.Column("text", sa.String(length=500), nullable=False),
+        sa.Column("is_correct", sa.Boolean(), nullable=False),
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["question_id"], ["questions.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("ix_answer_options_id"), "answer_options", ["id"], unique=True)
+    op.create_index(
+        op.f("ix_answer_options_question_id"),
+        "answer_options",
+        ["question_id"],
+        unique=False,
+    )
+    op.create_table(
+        "user_answers",
+        sa.Column("quiz_attempt_id", sa.UUID(), nullable=False),
+        sa.Column("question_id", sa.UUID(), nullable=False),
+        sa.Column("answer_option_id", sa.UUID(), nullable=False),
+        sa.Column("is_correct", sa.Boolean(), nullable=False),
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["answer_option_id"], ["answer_options.id"], ondelete="CASCADE"
+        ),
+        sa.ForeignKeyConstraint(["question_id"], ["questions.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["quiz_attempt_id"], ["quiz_attempts.id"], ondelete="CASCADE"
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_user_answers_answer_option_id"),
+        "user_answers",
+        ["answer_option_id"],
+        unique=False,
+    )
+    op.create_index(op.f("ix_user_answers_id"), "user_answers", ["id"], unique=True)
+    op.create_index(
+        op.f("ix_user_answers_question_id"),
+        "user_answers",
+        ["question_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_user_answers_quiz_attempt_id"),
+        "user_answers",
+        ["quiz_attempt_id"],
+        unique=False,
+    )
 
 
 def downgrade() -> None:
+    op.drop_index(op.f("ix_user_answers_quiz_attempt_id"), table_name="user_answers")
+    op.drop_index(op.f("ix_user_answers_question_id"), table_name="user_answers")
+    op.drop_index(op.f("ix_user_answers_id"), table_name="user_answers")
+    op.drop_index(op.f("ix_user_answers_answer_option_id"), table_name="user_answers")
+    op.drop_table("user_answers")
+    op.drop_index(op.f("ix_answer_options_question_id"), table_name="answer_options")
+    op.drop_index(op.f("ix_answer_options_id"), table_name="answer_options")
+    op.drop_table("answer_options")
+    op.drop_index(op.f("ix_quiz_attempts_user_id"), table_name="quiz_attempts")
+    op.drop_index(op.f("ix_quiz_attempts_quiz_id"), table_name="quiz_attempts")
+    op.drop_index(op.f("ix_quiz_attempts_id"), table_name="quiz_attempts")
+    op.drop_index(op.f("ix_quiz_attempts_company_id"), table_name="quiz_attempts")
+    op.drop_table("quiz_attempts")
+    op.drop_index(op.f("ix_questions_quiz_id"), table_name="questions")
+    op.drop_index(op.f("ix_questions_id"), table_name="questions")
+    op.drop_table("questions")
+    op.drop_index(op.f("ix_quizzes_id"), table_name="quizzes")
+    op.drop_index(op.f("ix_quizzes_company_id"), table_name="quizzes")
+    op.drop_table("quizzes")
     op.drop_index(op.f("ix_memberships_user_id"), table_name="memberships")
     op.drop_index(op.f("ix_memberships_role"), table_name="memberships")
     op.drop_index(op.f("ix_memberships_is_active"), table_name="memberships")

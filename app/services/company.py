@@ -2,7 +2,7 @@ from uuid import UUID
 
 from app.enums.roles import Roles
 from app.exceptions.base import InternalErrorException
-from app.permissions.membership import check_owner_permission
+from app.permissions.ownership import check_owner_permission
 from app.schemas.membership import MembershipCreate
 from app.exceptions.user import UnauthorizedUserAction
 from app.services.membership import MembershipService

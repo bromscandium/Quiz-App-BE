@@ -1,5 +1,7 @@
 from typing import Generic, TypeVar, Type, Any
-from sqlalchemy import select, update, delete, func
+from uuid import UUID
+
+from sqlalchemy import select, update, delete, func, not_
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +26,7 @@ class BaseRepository(Generic[T]):
         limit: int = 20,
         load_relationships: list[str] | None = None,
         use_joined_load=True,
+        exclude_ids: set[UUID] | None = None,
     ) -> tuple[list[T], int]:
         query = select(self.model)
         count_query = select(func.count()).select_from(self.model)
@@ -32,6 +35,10 @@ class BaseRepository(Generic[T]):
             field_attr = getattr(self.model, field)
             query = query.where(field_attr == value)
             count_query = count_query.where(field_attr == value)
+
+        if exclude_ids:
+            query = query.where(not_(self.model.id.in_(exclude_ids)))
+            count_query = count_query.where(not_(self.model.id.in_(exclude_ids)))
 
         if load_relationships:
             loader = joinedload if use_joined_load else selectinload
@@ -68,9 +75,10 @@ class BaseRepository(Generic[T]):
 
     async def update_by(self, field: str, value: Any, **update_data) -> T | None:
         field_attr = getattr(self.model, field)
-        await self.session.execute(
-            update(self.model).where(field_attr == value).values(**update_data)
-        )
+        if update_data:
+            await self.session.execute(
+                update(self.model).where(field_attr == value).values(**update_data)
+            )
         await self.session.commit()
 
         stmt = select(self.model).where(field_attr == value).options(selectinload("*"))

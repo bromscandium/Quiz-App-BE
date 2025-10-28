@@ -22,7 +22,7 @@ from app.schemas.membership import MembershipCreate
 from app.services.membership import MembershipService
 from app.unit_of_work.uow import UnitOfWork
 from app.enums.action_types import ActionTypes
-from app.permissions.membership import check_owner_permission
+from app.permissions.ownership import check_owner_permission
 from app.utils.logger import logger
 
 

@@ -12,8 +12,10 @@ Quiz-App-BE/
 │ ├── core/                         # Core settings and configurations for the app
 │ ├── db/                           # Modules for database interactions
 │ ├── dependencies/                 # Dependencies for backend
+│ ├── enums/                        # Enumerators for using in DB or services
 │ ├── exceptions/                   # Custom exceptions
 │ ├── models/                       # Models (for instance, User or QuizCard) for managing objects in application
+│ ├── persmissions/                 # Special permissions of checking availability to use function further
 │ ├── repositories/                 # Repositories for database access and data operations
 │ ├── routers/                      # Routers for application
 │ ├── schemas/                      # Pydantic schemas for data validation

@@ -10,7 +10,7 @@ from app.exceptions.membership import (
 )
 from app.exceptions.user import UnauthorizedUserAction
 from app.permissions.company import check_company_visibility
-from app.permissions.membership import check_owner_permission
+from app.permissions.ownership import check_owner_permission
 from app.schemas.membership import (
     MembershipSchema,
     MembershipCreate,
