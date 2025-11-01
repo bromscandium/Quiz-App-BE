@@ -1,11 +1,13 @@
 import uuid
+
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Enum as SQLAEnum
+
 from app.enums.action_types import ActionTypes
 from app.enums.statuses import Statuses
-from app.models import Base, User, Company
+from app.models.base import Base
 
 
 class CompanyActions(Base):

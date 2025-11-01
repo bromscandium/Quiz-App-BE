@@ -1,9 +1,11 @@
-import pytest
 from uuid import uuid4
-from app.services.auth import AuthService
-from app.schemas.user import UserCreate
+
+import pytest
+
 from app.exceptions.auth import InvalidRefreshToken, InvalidTokenFormat
 from app.exceptions.user import UserNotFound
+from app.schemas.user import UserCreate
+from app.services.auth import AuthService
 
 auth_service = AuthService()
 

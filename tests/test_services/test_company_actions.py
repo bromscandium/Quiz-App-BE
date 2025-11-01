@@ -1,17 +1,19 @@
-import pytest
 from uuid import uuid4
-from app.enums.statuses import Statuses
+
+import pytest
+
 from app.enums.action_types import ActionTypes
+from app.enums.statuses import Statuses
 from app.exceptions.base import InternalErrorException
-from app.services.company_actions import CompanyActionsService
-from app.schemas.company_actions import CompanyActionCreate, CompanyActionUpdate
 from app.exceptions.company_actions import (
-    NotProvidedInfoForInvitation,
-    NotAllowedChangeCompanyAction,
     CompanyActionNotFound,
+    NotAllowedChangeCompanyAction,
+    NotProvidedInfoForInvitation,
 )
 from app.exceptions.user import UnauthorizedUserAction
-from tests.fixtures import test_user, test_second_user, test_company
+from app.schemas.company_actions import CompanyActionCreate, CompanyActionUpdate
+from app.services.company_actions import CompanyActionsService
+from tests.fixtures import test_company, test_second_user, test_user
 
 service = CompanyActionsService()
 

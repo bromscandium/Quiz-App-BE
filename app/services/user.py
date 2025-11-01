@@ -1,44 +1,36 @@
-from pydantic import EmailStr
 from uuid import UUID
 
-from app.exceptions.base import InternalErrorException
-from app.unit_of_work.uow import UnitOfWork
-from app.utils.password import PasswordUtil
+from pydantic import EmailStr
+
+from app.exceptions import UnauthorizedUserAction, UserAlreadyExists, UserNotFound
 from app.schemas.user import (
-    UserSchema,
     UserCreate,
-    UserUpdate,
-    UsersList,
     UserOwnedCompaniesList,
     UserOwnedCompany,
+    UserSchema,
+    UsersList,
+    UserUpdate,
 )
-from app.utils.logger import logger
-from app.exceptions.user import UserAlreadyExists, UnauthorizedUserAction
+from app.unit_of_work import UnitOfWork
+from app.utils import LoggerUtil, PasswordUtil
 
 
 class UserService:
     def __init__(self):
         self.password_util = PasswordUtil()
+        self.logger_util = LoggerUtil()
 
     async def create_user(self, uow: UnitOfWork, data: UserCreate) -> UserSchema:
-        try:
-            items, _ = await uow.users.read("email", data.email, offset=0, limit=1)
-            if items:
-                raise UserAlreadyExists
+        users, _ = await uow.users.read("email", data.email, offset=0, limit=1)
+        if users:
+            self.logger_util.info("User already exists")
+            raise UserAlreadyExists
 
-            user_data = data.model_dump(exclude={"password"})
-            user_data["hashed_password"] = self.password_util.hash_password(
-                data.password
-            )
-            user = await uow.users.create(**user_data)
-            await uow.session.flush()
-            return UserSchema.model_validate(user)
-
-        except UserAlreadyExists:
-            raise
-        except Exception as e:
-            logger.exception(f"Error while creating user: {e}")
-            raise InternalErrorException
+        user_data = data.model_dump(exclude={"password"})
+        user_data["hashed_password"] = self.password_util.hash_password(data.password)
+        user = await uow.users.create(**user_data)
+        await uow.session.flush()
+        return UserSchema.model_validate(user)
 
     async def read_user_by_id(self, uow: UnitOfWork, value: UUID) -> UserSchema | None:
         user, _ = await uow.users.read(field="id", value=value, offset=0, limit=1)
@@ -65,51 +57,9 @@ class UserService:
     async def read_all_users(
         self, uow: UnitOfWork, offset: int = 0, limit: int = 20
     ) -> UsersList | None:
-        items, total = await uow.users.read(offset=offset, limit=limit)
-        user_schemas = [UserSchema.model_validate(u) for u in items]
+        users, total = await uow.users.read(offset=offset, limit=limit)
+        user_schemas = [UserSchema.model_validate(u) for u in users]
         return UsersList(users=user_schemas, total=total)
-
-    async def update_user(
-        self,
-        uow: UnitOfWork,
-        user_id: UUID,
-        data: UserUpdate,
-        current_user_id: UUID,
-    ) -> UserSchema:
-        try:
-            if user_id != current_user_id:
-                raise UnauthorizedUserAction
-
-            update_data = data.model_dump(exclude_unset=True)
-            if "password" in update_data:
-                update_data["hashed_password"] = self.password_util.hash_password(
-                    update_data["password"]
-                )
-                del update_data["password"]
-            user = await uow.users.update_by("id", user_id, **update_data)
-            return UserSchema.model_validate(user)
-        except UnauthorizedUserAction:
-            raise
-        except Exception as e:
-            logger.exception(f"Error while updating user: {e}")
-            raise InternalErrorException
-
-    async def delete_user(
-        self,
-        uow: UnitOfWork,
-        user_id: UUID,
-        current_user_id: UUID,
-    ) -> None:
-        try:
-            if user_id != current_user_id:
-                raise UnauthorizedUserAction
-            await self.read_user_by_id(uow, user_id)
-            await uow.users.delete_by("id", user_id)
-        except UnauthorizedUserAction:
-            raise
-        except Exception as e:
-            logger.exception(f"Error while deleting user: {e}")
-            raise InternalErrorException
 
     async def read_user_companies(
         self, uow: UnitOfWork, offset: int = 0, limit: int = 20, value: UUID = None
@@ -120,3 +70,42 @@ class UserService:
 
         owned_companies = [UserOwnedCompany.model_validate(c) for c in items]
         return UserOwnedCompaniesList(companies=owned_companies, total=total)
+
+    async def update_user(
+        self,
+        uow: UnitOfWork,
+        user_id: UUID,
+        data: UserUpdate,
+        current_user_id: UUID,
+    ) -> UserSchema:
+        if user_id != current_user_id:
+            self.logger_util.info("User not authorized")
+            raise UnauthorizedUserAction
+        if await self.read_user_by_id(uow, user_id) is None:
+            self.logger_util.info("User not found")
+            raise UserNotFound
+
+        update_data = data.model_dump(exclude_unset=True)
+        if "password" in update_data:
+            update_data["hashed_password"] = self.password_util.hash_password(
+                update_data["password"]
+            )
+            del update_data["password"]
+        user = await uow.users.update_by("id", user_id, **update_data)
+        return UserSchema.model_validate(user)
+
+    async def delete_user(
+        self,
+        uow: UnitOfWork,
+        user_id: UUID,
+        current_user_id: UUID,
+    ) -> None:
+        if user_id != current_user_id:
+            self.logger_util.info("User not authorized")
+            raise UnauthorizedUserAction
+
+        if await self.read_user_by_id(uow, user_id) is None:
+            self.logger_util.info("User not found")
+            raise UserNotFound
+
+        await uow.users.delete_by("id", user_id)

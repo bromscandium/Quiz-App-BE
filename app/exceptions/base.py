@@ -1,9 +1,17 @@
-from fastapi import HTTPException, status
+from fastapi import status, HTTPException
 
 
-class InternalErrorException(HTTPException):
-    def __init__(self, detail: str = "Internal server error"):
+class BadRequestErrorException(HTTPException):
+    def __init__(self):
         super().__init__(
-            detail=detail,
+            detail="Bad request error",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class InternalServerErrorException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            detail="Internal server error",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

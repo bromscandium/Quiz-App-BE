@@ -4,18 +4,16 @@ from fastapi import APIRouter, Query
 from fastapi.params import Depends
 from starlette import status
 
-from app.dependencies.auth_token import get_auth_user_from_token
-from app.dependencies.uow import get_uow
-from app.enums.action_types import ActionTypes
-from app.enums.statuses import Statuses
+from app.dependencies import get_auth_user_from_token, get_uow
+from app.enums import ActionTypes, Statuses
 from app.schemas.company_actions import (
-    CompanyActionSchema,
     CompanyActionCreate,
-    CompanyActionUpdate,
+    CompanyActionSchema,
     CompanyActionsList,
+    CompanyActionUpdate,
 )
-from app.services.company_actions import CompanyActionsService
-from app.unit_of_work.uow import UnitOfWork
+from app.services import CompanyActionsService
+from app.unit_of_work import UnitOfWork
 
 company_actions_service = CompanyActionsService()
 

@@ -1,11 +1,11 @@
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
 
 from app.schemas.base import Base
 from app.schemas.company import CompanySchema
 from app.schemas.quiz import QuizSchema
 from app.schemas.user import UserSchema
-from app.schemas.user_answer import UserAnswerSchema, UserAnswerCreate
+from app.schemas.user_answer import UserAnswerCreate, UserAnswerSchema
 
 
 class QuizAttemptSchema(Base):
@@ -32,13 +32,3 @@ class QuizAttemptCreate(Base):
 class QuizAttemptsList(Base):
     quiz_attempts: list[QuizAttemptSchema] = []
     total: int
-
-
-class UserStats(Base):
-    user_id: UUID
-    company_id: UUID | None = None
-    total_correct_answers: int
-    total_answered_questions: int
-    average_score: float
-
-    last_attempt_at: datetime | None = None

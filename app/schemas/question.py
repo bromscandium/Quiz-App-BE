@@ -1,11 +1,12 @@
-from uuid import UUID
 from datetime import datetime
-from app.schemas.base import Base
+from uuid import UUID
+
 from app.schemas.answer_option import (
-    AnswerOptionSchema,
     AnswerOptionCreate,
+    AnswerOptionSchema,
     AnswerOptionUpdate,
 )
+from app.schemas.base import Base
 
 
 class QuestionSchema(Base):

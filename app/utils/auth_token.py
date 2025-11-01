@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
 import jwt
 
 from app.core.security import security_settings
