@@ -1,26 +1,21 @@
-from fastapi import HTTPException, status
+from fastapi import status, HTTPException
 
 
-class CompanyActionsException(HTTPException):
-    def __init__(self, detail: str, status_code: int = status.HTTP_400_BAD_REQUEST):
-        super().__init__(status_code=status_code, detail=detail)
-
-
-class NotFoundActionType(CompanyActionsException):
+class NotFoundActionType(HTTPException):
     def __init__(self):
         super().__init__(
-            detail="Not found Action Type", status_code=status.HTTP_404_NOT_FOUND
+            detail="Not found action type",
         )
 
 
-class CompanyActionNotFound(CompanyActionsException):
+class CompanyActionNotFound(HTTPException):
     def __init__(self):
         super().__init__(
-            detail="Company action not found", status_code=status.HTTP_404_NOT_FOUND
+            detail="Company action not found",
         )
 
 
-class NotAllowedChangeCompanyAction(CompanyActionsException):
+class NotAllowedChangeCompanyAction(HTTPException):
     def __init__(self):
         super().__init__(
             detail="Can't change company action, if it is not pending",
@@ -28,17 +23,8 @@ class NotAllowedChangeCompanyAction(CompanyActionsException):
         )
 
 
-class NotProvidedInfoForInvitation(CompanyActionsException):
+class NotProvidedInfoForCompanyAction(HTTPException):
     def __init__(self):
         super().__init__(
-            detail="Not provided information for sending company action",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-class PrivateCompany(CompanyActionsException):
-    def __init__(self):
-        super().__init__(
-            detail="Error while sending request to private company",
-            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No provided information for sending company actio",
         )

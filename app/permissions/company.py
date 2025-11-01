@@ -1,7 +1,8 @@
-from fastapi import Depends
 from uuid import UUID
 
-from app.unit_of_work.uow import UnitOfWork
+from fastapi import Depends
+
+from app.unit_of_work import UnitOfWork
 
 
 async def check_company_visibility(

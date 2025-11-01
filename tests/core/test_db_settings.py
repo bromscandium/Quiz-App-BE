@@ -1,6 +1,8 @@
-from pydantic_settings import SettingsConfigDict
-from app.core.base import BaseConfig
 from pathlib import Path
+
+from pydantic_settings import SettingsConfigDict
+
+from app.core.base import BaseConfig
 
 
 class DbSettings(BaseConfig):

@@ -1,5 +1,5 @@
 from app.db.postgres import async_session
-from app.unit_of_work.uow import UnitOfWork
+from app.unit_of_work import UnitOfWork
 
 
 async def get_uow():

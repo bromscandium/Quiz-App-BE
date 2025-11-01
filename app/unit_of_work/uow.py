@@ -1,16 +1,17 @@
 from __future__ import annotations
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.repositories.answer_option import AnswerOptionRepository
+from app.repositories.company import CompanyRepository
+from app.repositories.company_actions import CompanyActionsRepository
+from app.repositories.membership import MembershipRepository
 from app.repositories.question import QuestionRepository
 from app.repositories.quiz import QuizRepository
 from app.repositories.quiz_attempt import QuizAttemptRepository
-from app.repositories.user import UserRepository
-from app.repositories.company import CompanyRepository
-from app.repositories.membership import MembershipRepository
-from app.repositories.company_actions import CompanyActionsRepository
-from app.repositories.user_answer import UserAnswerRepository
 from app.repositories.stats import StatsRepository
+from app.repositories.user import UserRepository
+from app.repositories.user_answer import UserAnswerRepository
 
 
 class UnitOfWork:

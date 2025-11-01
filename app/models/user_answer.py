@@ -1,10 +1,11 @@
 import uuid
-from sqlalchemy import ForeignKey, Boolean
+
+from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models import Base
-from app.models.mixins import TimestampMixin, IdMixin
+from app.models.base import Base
+from app.models.mixins import IdMixin, TimestampMixin
 
 
 class UserAnswer(Base, IdMixin, TimestampMixin):

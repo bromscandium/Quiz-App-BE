@@ -71,7 +71,9 @@ dev = [
     "ruff (>=0.13.2,<0.14.0)",
     "pre-commit (>=4.3.0,<5.0.0)",
     "pytest-env (>=1.1.5,<2.0.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)"
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "black (>=25.9.0,<26.0.0)",
+    "autopep8 (>=2.3.2,<3.0.0)"
 ]
 
 [tool.pytest.ini_options]

@@ -1,11 +1,12 @@
-import pytest
 from uuid import uuid4
 
+import pytest
+
 from app.exceptions.base import InternalErrorException
-from app.services.company import CompanyService
-from app.schemas.company import CompanyCreate, CompanyUpdate
 from app.exceptions.company import CompanyNotFound
 from app.exceptions.user import UnauthorizedUserAction
+from app.schemas.company import CompanyCreate, CompanyUpdate
+from app.services.company import CompanyService
 from tests.fixtures import test_user
 
 company_service = CompanyService()

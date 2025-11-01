@@ -5,10 +5,9 @@ from pydantic import EmailStr
 
 from app.enums.action_types import ActionTypes
 from app.enums.statuses import Statuses
+from app.schemas.base import Base
 from app.schemas.company import CompanySchema
 from app.schemas.user import UserSchema
-
-from app.schemas.base import Base
 
 
 class CompanyActionSchema(Base):

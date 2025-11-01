@@ -5,7 +5,7 @@ import jwt
 from jwt.algorithms import RSAAlgorithm
 
 from app.core.security import security_settings
-from app.exceptions.auth import InvalidTokenHeader
+from app.exceptions import InvalidTokenFormat
 
 
 class Auth0TokenUtil:
@@ -27,7 +27,7 @@ class Auth0TokenUtil:
         try:
             unverified_header = jwt.get_unverified_header(token)
         except jwt.PyJWTError:
-            raise InvalidTokenHeader
+            raise InvalidTokenFormat
 
         rsa_key = None
         for key in jwks.get("keys", []):

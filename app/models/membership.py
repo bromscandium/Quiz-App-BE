@@ -2,10 +2,11 @@ import uuid
 
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import mapped_column, Mapped, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Enum as SQLAEnum
-from app.models import Base, User, Company
+
 from app.enums.roles import Roles
+from app.models.base import Base
 
 
 class Membership(Base):

@@ -1,12 +1,10 @@
-import pytest
 from uuid import uuid4
 
-from app.services.user import UserService
+import pytest
+
+from app.exceptions.user import UnauthorizedUserAction, UserAlreadyExists
 from app.schemas.user import UserCreate, UserUpdate
-from app.exceptions.user import (
-    UserAlreadyExists,
-    UnauthorizedUserAction,
-)
+from app.services.user import UserService
 
 user_service = UserService()
 

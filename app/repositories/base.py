@@ -1,9 +1,9 @@
-from typing import Generic, TypeVar, Type, Any
+from typing import Any, Generic, Type, TypeVar
 from uuid import UUID
 
-from sqlalchemy import select, update, delete, func, not_
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import delete, func, not_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 
 T = TypeVar("T")
 

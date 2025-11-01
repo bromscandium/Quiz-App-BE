@@ -1,6 +1,7 @@
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, func, Row
+from sqlalchemy import Row, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quiz_attempt import QuizAttempt
@@ -11,7 +12,12 @@ class StatsRepository:
         self.session = session
 
     async def calculate_stats(
-        self, user_id: UUID, quiz_id: UUID, company_id: UUID
+        self,
+        user_id: UUID,
+        quiz_id: UUID | None = None,
+        company_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> Row | None:
         stmt = select(
             func.sum(QuizAttempt.correct_answers).label("total_correct"),
@@ -32,6 +38,12 @@ class StatsRepository:
             stmt = stmt.where(QuizAttempt.created_at == subq).where(
                 QuizAttempt.quiz_id == quiz_id
             )
+
+        if start_date:
+            stmt = stmt.where(QuizAttempt.created_at >= start_date)
+
+        if end_date:
+            stmt = stmt.where(QuizAttempt.created_at <= end_date)
 
         result = await self.session.execute(stmt)
         return result.first()
