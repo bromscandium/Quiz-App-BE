@@ -1,14 +1,15 @@
-from typing import Any, Coroutine
 from uuid import UUID
 
-from app.enums import Roles
+from app.enums import Roles, NotificationStatuses
 from app.exceptions import (
     InvalidQuizStructure,
     QuizNotFound,
     UnauthorizedQuizAction,
 )
+from app.schemas.notification import NotificationCreate
 from app.schemas.question import QuestionsListCreate
 from app.schemas.quiz import QuizCreate, QuizList, QuizSchema, QuizUpdate
+from app.services.notification import NotificationService
 from app.unit_of_work import UnitOfWork
 from app.utils import LoggerUtil
 
@@ -16,6 +17,7 @@ from app.utils import LoggerUtil
 class QuizService:
     def __init__(self):
         self.logger_util = LoggerUtil()
+        self.notification_service = NotificationService()
 
     async def _check_user_permissions(
         self, uow: UnitOfWork, company_id: UUID, user_id: UUID
@@ -90,6 +92,32 @@ class QuizService:
                 await uow.session.flush()
 
         quiz_with_question = await self._get_quiz_by_id(uow, quiz.id)
+
+        memberships, total = await uow.membership.read(
+            field="company_id",
+            value=data.company_id,
+            offset=0,
+            limit=100,
+            load_relationships=["user"],
+        )
+        active_members = [m for m in memberships if m.is_active]
+
+        notification = await self.notification_service.create_notification(
+            uow,
+            data=NotificationCreate(
+                message=f"New test {data.title} in your company",
+                company_id=data.company_id,
+            ),
+        )
+
+        await uow.session.flush()
+
+        for member in active_members:
+            await uow.user_notifications.create(
+                user_id=member.user_id,
+                notification_id=notification.id,
+                status=NotificationStatuses.UNREAD,
+            )
 
         return QuizSchema.model_validate(quiz_with_question)
 

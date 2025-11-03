@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Enum as SQLAEnum
 
 from app.enums.action_types import ActionTypes
-from app.enums.statuses import Statuses
+from app.enums.action_statuses import ActionStatuses
 from app.models.base import Base
 
 
@@ -34,8 +34,8 @@ class CompanyActions(Base):
     invited_email: Mapped[str] = mapped_column(
         String(320), unique=True, nullable=True, index=True
     )
-    status: Mapped[Statuses] = mapped_column(
-        SQLAEnum(Statuses, name="status"), index=True, nullable=False
+    status: Mapped[ActionStatuses] = mapped_column(
+        SQLAEnum(ActionStatuses, name="status"), index=True, nullable=False
     )
 
     user: Mapped["User"] = relationship(back_populates="company_actions")

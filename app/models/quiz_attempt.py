@@ -5,10 +5,9 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
-from app.models.mixins import IdMixin, TimestampMixin
 
 
-class QuizAttempt(Base, IdMixin, TimestampMixin):
+class QuizAttempt(Base):
     __tablename__ = "quiz_attempts"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

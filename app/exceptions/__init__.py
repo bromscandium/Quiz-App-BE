@@ -7,6 +7,7 @@ from .membership import *
 from .quiz import *
 from .quiz_attempt import *
 from .user import *
+from .notification import *
 
 __all__ = [
     "BadRequestErrorException",
@@ -34,4 +35,5 @@ __all__ = [
     "UserAlreadyExists",
     "UnauthorizedUserAction",
     "UserNotFound",
+    "NotificationNotFound",
 ]

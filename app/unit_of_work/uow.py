@@ -2,16 +2,20 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.repositories.answer_option import AnswerOptionRepository
-from app.repositories.company import CompanyRepository
-from app.repositories.company_actions import CompanyActionsRepository
-from app.repositories.membership import MembershipRepository
-from app.repositories.question import QuestionRepository
-from app.repositories.quiz import QuizRepository
-from app.repositories.quiz_attempt import QuizAttemptRepository
-from app.repositories.stats import StatsRepository
-from app.repositories.user import UserRepository
-from app.repositories.user_answer import UserAnswerRepository
+from app.repositories import (
+    AnswerOptionRepository,
+    CompanyRepository,
+    CompanyActionsRepository,
+    MembershipRepository,
+    QuestionRepository,
+    QuizRepository,
+    QuizAttemptRepository,
+    StatsRepository,
+    UserRepository,
+    UserAnswerRepository,
+    NotificationRepository,
+    UserNotificationRepository,
+)
 
 
 class UnitOfWork:
@@ -30,6 +34,8 @@ class UnitOfWork:
         self.quiz_attempts = QuizAttemptRepository(self.session)
         self.user_answers = UserAnswerRepository(self.session)
         self.stats = StatsRepository(self.session)
+        self.notifications = NotificationRepository(self.session)
+        self.user_notifications = UserNotificationRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:

@@ -109,7 +109,7 @@ class CompanyActionsService:
         current_user_id: UUID,
         action_type: ActionTypes | None = None,
         company_id: UUID | None = None,
-        status: Statuses | None = None,
+        status: ActionStatuses | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> CompanyActionsList:
@@ -158,13 +158,13 @@ class CompanyActionsService:
             actions=validated_items,
             total=len(filtered_items),
             pending_total=sum(
-                1 for c_a in filtered_items if c_a.status == Statuses.PENDING
+                1 for c_a in filtered_items if c_a.status == ActionStatuses.PENDING
             ),
             accepted_total=sum(
-                1 for c_a in filtered_items if c_a.status == Statuses.ACCEPTED
+                1 for c_a in filtered_items if c_a.status == ActionStatuses.ACCEPTED
             ),
             cancelled_total=sum(
-                1 for c_a in filtered_items if c_a.status == Statuses.CANCELLED
+                1 for c_a in filtered_items if c_a.status == ActionStatuses.CANCELLED
             ),
         )
 
@@ -180,10 +180,10 @@ class CompanyActionsService:
             self.logger_util.info("Company action not found")
             raise CompanyActionNotFound
 
-        if company_action.status == Statuses.PENDING:
+        if company_action.status == ActionStatuses.PENDING:
             await self._validate_user_permission(uow, company_action, current_user_id)
 
-            if data.status == Statuses.ACCEPTED:
+            if data.status == ActionStatuses.ACCEPTED:
                 membership_data = MembershipCreate(
                     user_id=company_action.user_id,
                     company_id=company_action.company_id,

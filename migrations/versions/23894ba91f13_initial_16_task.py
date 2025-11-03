@@ -5,7 +5,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 
-revision: str = "94710212dca1"
+revision: str = "23894ba91f13"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -121,6 +121,23 @@ def upgrade() -> None:
         op.f("ix_memberships_user_id"), "memberships", ["user_id"], unique=False
     )
     op.create_table(
+        "notifications",
+        sa.Column("company_id", sa.UUID(), nullable=False),
+        sa.Column("message", sa.String(), nullable=False),
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["company_id"], ["companies.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_notifications_company_id"),
+        "notifications",
+        ["company_id"],
+        unique=False,
+    )
+    op.create_index(op.f("ix_notifications_id"), "notifications", ["id"], unique=True)
+    op.create_table(
         "quizzes",
         sa.Column("company_id", sa.UUID(), nullable=False),
         sa.Column("title", sa.String(length=200), nullable=False),
@@ -177,6 +194,45 @@ def upgrade() -> None:
     )
     op.create_index(
         op.f("ix_quiz_attempts_user_id"), "quiz_attempts", ["user_id"], unique=False
+    )
+    op.create_table(
+        "user_notifications",
+        sa.Column("user_id", sa.UUID(), nullable=False),
+        sa.Column("notification_id", sa.UUID(), nullable=False),
+        sa.Column(
+            "status",
+            sa.Enum("UNREAD", "READ", name="notification_statuses"),
+            nullable=False,
+        ),
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["notification_id"], ["notifications.id"], ondelete="CASCADE"
+        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("user_id", "notification_id", "id"),
+    )
+    op.create_index(
+        op.f("ix_user_notifications_id"), "user_notifications", ["id"], unique=True
+    )
+    op.create_index(
+        op.f("ix_user_notifications_notification_id"),
+        "user_notifications",
+        ["notification_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_user_notifications_status"),
+        "user_notifications",
+        ["status"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_user_notifications_user_id"),
+        "user_notifications",
+        ["user_id"],
+        unique=False,
     )
     op.create_table(
         "answer_options",
@@ -244,6 +300,15 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_answer_options_question_id"), table_name="answer_options")
     op.drop_index(op.f("ix_answer_options_id"), table_name="answer_options")
     op.drop_table("answer_options")
+    op.drop_index(
+        op.f("ix_user_notifications_user_id"), table_name="user_notifications"
+    )
+    op.drop_index(op.f("ix_user_notifications_status"), table_name="user_notifications")
+    op.drop_index(
+        op.f("ix_user_notifications_notification_id"), table_name="user_notifications"
+    )
+    op.drop_index(op.f("ix_user_notifications_id"), table_name="user_notifications")
+    op.drop_table("user_notifications")
     op.drop_index(op.f("ix_quiz_attempts_user_id"), table_name="quiz_attempts")
     op.drop_index(op.f("ix_quiz_attempts_quiz_id"), table_name="quiz_attempts")
     op.drop_index(op.f("ix_quiz_attempts_id"), table_name="quiz_attempts")
@@ -255,6 +320,9 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_quizzes_id"), table_name="quizzes")
     op.drop_index(op.f("ix_quizzes_company_id"), table_name="quizzes")
     op.drop_table("quizzes")
+    op.drop_index(op.f("ix_notifications_id"), table_name="notifications")
+    op.drop_index(op.f("ix_notifications_company_id"), table_name="notifications")
+    op.drop_table("notifications")
     op.drop_index(op.f("ix_memberships_user_id"), table_name="memberships")
     op.drop_index(op.f("ix_memberships_role"), table_name="memberships")
     op.drop_index(op.f("ix_memberships_is_active"), table_name="memberships")

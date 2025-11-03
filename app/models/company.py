@@ -37,3 +37,7 @@ class Company(Base):
     quiz_attempts: Mapped[list["QuizAttempt"]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )
+
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )

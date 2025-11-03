@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 
 from app.enums.action_types import ActionTypes
-from app.enums.statuses import Statuses
+from app.enums.action_statuses import ActionStatuses
 from app.exceptions.base import InternalErrorException
 from app.exceptions.company_actions import (
     CompanyActionNotFound,
@@ -33,7 +33,7 @@ class TestCompanyActionsService:
         assert action.id is not None
         assert action.user.id == test_second_user.id
         assert action.company.id == test_company.id
-        assert action.status == Statuses.PENDING
+        assert action.status == ActionStatuses.PENDING
         assert action.action_type == ActionTypes.INVITATION
 
     async def test_read_company_action_success(
@@ -73,12 +73,12 @@ class TestCompanyActionsService:
         )
         action = await service.create_company_action(uow, test_second_user.id, data)
 
-        update_data = CompanyActionUpdate(status=Statuses.ACCEPTED)
+        update_data = CompanyActionUpdate(status=ActionStatuses.ACCEPTED)
         updated = await service.update_company_action(
             uow, test_user.id, action.id, update_data
         )
 
-        assert updated.status == Statuses.ACCEPTED
+        assert updated.status == ActionStatuses.ACCEPTED
 
     async def test_update_company_action_not_allowed(
         self, uow, test_user, test_second_user, test_company
@@ -90,7 +90,7 @@ class TestCompanyActionsService:
         )
         action = await service.create_company_action(uow, test_second_user.id, data)
 
-        update_data = CompanyActionUpdate(status=Statuses.ACCEPTED)
+        update_data = CompanyActionUpdate(status=ActionStatuses.ACCEPTED)
         with pytest.raises(InternalErrorException):
             await service.update_company_action(
                 uow, test_second_user.id, action.id, update_data

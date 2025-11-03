@@ -8,6 +8,8 @@ from .quiz import Quiz
 from .quiz_attempt import QuizAttempt
 from .user import User
 from .user_answer import UserAnswer
+from .notification import Notification
+from .user_notification import UserNotification
 
 __all__ = [
     "Base",
@@ -20,4 +22,6 @@ __all__ = [
     "Quiz",
     "QuizAttempt",
     "UserAnswer",
+    "Notification",
+    "UserNotification",
 ]

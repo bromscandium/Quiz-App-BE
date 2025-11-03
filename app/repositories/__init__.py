@@ -8,6 +8,8 @@ from .quiz_attempt import QuizAttemptRepository
 from .stats import StatsRepository
 from .user import UserRepository
 from .user_answer import UserAnswerRepository
+from .notification import NotificationRepository
+from .user_notification import UserNotificationRepository
 
 __all__ = [
     "AnswerOptionRepository",
@@ -19,5 +21,7 @@ __all__ = [
     "QuizAttemptRepository",
     "StatsRepository",
     "UserRepository",
+    "NotificationRepository",
     "UserAnswerRepository",
+    "UserNotificationRepository",
 ]

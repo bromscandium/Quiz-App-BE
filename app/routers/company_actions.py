@@ -5,7 +5,7 @@ from fastapi.params import Depends
 from starlette import status
 
 from app.dependencies import get_auth_user_from_token, get_uow
-from app.enums import ActionTypes, Statuses
+from app.enums import ActionTypes, ActionStatuses
 from app.schemas.company_actions import (
     CompanyActionCreate,
     CompanyActionSchema,
@@ -37,7 +37,7 @@ async def create_company_action(
 async def read_company_actions(
     action_type: ActionTypes | None = Query(None),
     company_id: UUID | None = Query(None),
-    status: Statuses | None = Query(None),
+    status: ActionStatuses | None = Query(None),
     offset: int = 0,
     limit: int = 20,
     current_user_id: UUID = Depends(get_auth_user_from_token),

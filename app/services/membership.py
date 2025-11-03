@@ -115,11 +115,11 @@ class MembershipService:
         if roles is not None:
             memberships = [m for m in memberships if m.role in roles]
 
-        active_items = [m for m in memberships if m.is_active]
+        active_members = [m for m in memberships if m.is_active]
 
         memberships = [CompanyMembership.model_validate(m) for m in memberships]
         return CompanyMembershipsList(
-            memberships=memberships, total=total, active_total=len(active_items)
+            memberships=memberships, total=total, active_total=len(active_members)
         )
 
     async def update_membership(
