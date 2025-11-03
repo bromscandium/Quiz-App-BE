@@ -4,6 +4,7 @@ __pycache__/
 *.pyd
 *.db
 venv/
+.venv/
 dist/
 build/
 tests/

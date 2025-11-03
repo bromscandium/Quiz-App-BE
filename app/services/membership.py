@@ -77,7 +77,7 @@ class MembershipService:
             value=current_user_id,
             offset=offset,
             limit=limit,
-            load_relationships=["user", "company"],
+            load_relationships=["user", "company", "company.owner"],
         )
 
         active_total = [m for m in memberships if m.is_active]

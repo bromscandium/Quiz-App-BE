@@ -1,3 +1,4 @@
+from .base import Base
 from .answer_option import AnswerOption
 from .company import Company
 from .company_actions import CompanyActions
@@ -9,6 +10,7 @@ from .user import User
 from .user_answer import UserAnswer
 
 __all__ = [
+    "Base",
     "User",
     "Company",
     "CompanyActions",
