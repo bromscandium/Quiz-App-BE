@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import UUID
+
 from pydantic import EmailStr
 
 from app.schemas.base import Base

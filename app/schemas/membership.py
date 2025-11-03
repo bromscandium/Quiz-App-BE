@@ -2,10 +2,9 @@ from datetime import datetime
 from uuid import UUID
 
 from app.enums.roles import Roles
+from app.schemas.base import Base
 from app.schemas.company import CompanySchema
 from app.schemas.user import UserSchema
-
-from app.schemas.base import Base
 
 
 class MembershipSchema(Base):

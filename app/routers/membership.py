@@ -1,21 +1,19 @@
-from fastapi import APIRouter, Depends, Query
 from uuid import UUID
 
-from app.enums.roles import Roles
+from fastapi import APIRouter, Depends, Query
 from starlette import status
 
-from app.dependencies.auth_token import get_auth_user_from_token
-from app.dependencies.uow import get_uow
+from app.dependencies import get_auth_user_from_token, get_uow
+from app.enums.roles import Roles
 from app.schemas.membership import (
-    MembershipSchema,
+    CompanyMembershipsList,
     MembershipCreate,
+    MembershipSchema,
     MembershipUpdate,
     UserMembershipsList,
-    CompanyMembershipsList,
 )
-
-from app.unit_of_work.uow import UnitOfWork
-from app.services.membership import MembershipService
+from app.services import MembershipService
+from app.unit_of_work import UnitOfWork
 
 membership_service = MembershipService()
 router = APIRouter(prefix="/memberships", tags=["memberships"])

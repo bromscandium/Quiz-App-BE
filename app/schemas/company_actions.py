@@ -4,11 +4,10 @@ from uuid import UUID
 from pydantic import EmailStr
 
 from app.enums.action_types import ActionTypes
-from app.enums.statuses import Statuses
+from app.enums.action_statuses import ActionStatuses
+from app.schemas.base import Base
 from app.schemas.company import CompanySchema
 from app.schemas.user import UserSchema
-
-from app.schemas.base import Base
 
 
 class CompanyActionSchema(Base):
@@ -17,7 +16,7 @@ class CompanyActionSchema(Base):
     company: CompanySchema | None = None
     action_type: ActionTypes
     invited_email: EmailStr | None = None
-    status: Statuses
+    status: ActionStatuses
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -27,11 +26,11 @@ class CompanyActionCreate(Base):
     company_id: UUID
     action_type: ActionTypes
     invited_email: EmailStr | None = None
-    status: Statuses = Statuses.PENDING
+    status: ActionStatuses = ActionStatuses.PENDING
 
 
 class CompanyActionUpdate(Base):
-    status: Statuses = Statuses.PENDING
+    status: ActionStatuses = ActionStatuses.PENDING
 
 
 class CompanyActionsList(Base):

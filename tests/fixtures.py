@@ -1,9 +1,9 @@
 import pytest_asyncio
 
-from app.schemas.user import UserCreate
-from app.services.user import UserService
-from app.services.company import CompanyService
 from app.schemas.company import CompanyCreate
+from app.schemas.user import UserCreate
+from app.services.company import CompanyService
+from app.services.user import UserService
 from app.unit_of_work.uow import UnitOfWork
 
 

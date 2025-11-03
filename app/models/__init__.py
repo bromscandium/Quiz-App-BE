@@ -1,13 +1,15 @@
 from .base import Base
-from .user import User
+from .answer_option import AnswerOption
 from .company import Company
 from .company_actions import CompanyActions
 from .membership import Membership
-from .answer_option import AnswerOption
 from .question import Question
 from .quiz import Quiz
 from .quiz_attempt import QuizAttempt
+from .user import User
 from .user_answer import UserAnswer
+from .notification import Notification
+from .user_notification import UserNotification
 
 __all__ = [
     "Base",
@@ -20,4 +22,6 @@ __all__ = [
     "Quiz",
     "QuizAttempt",
     "UserAnswer",
+    "Notification",
+    "UserNotification",
 ]

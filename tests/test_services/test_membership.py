@@ -1,9 +1,9 @@
 import pytest
 
+from app.enums.roles import Roles
 from app.schemas.membership import MembershipCreate, MembershipUpdate
 from app.services.membership import MembershipService
-from app.enums.roles import Roles
-from tests.fixtures import test_user, test_second_user, test_company
+from tests.fixtures import test_company, test_second_user, test_user
 
 service = MembershipService()
 

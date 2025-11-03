@@ -1,43 +1,55 @@
 from uuid import UUID
 
-from app.exceptions.base import InternalErrorException
-from app.unit_of_work.uow import UnitOfWork
-from app.schemas.quiz import QuizSchema, QuizCreate, QuizUpdate, QuizList
-from app.schemas.question import QuestionsListCreate
-from app.utils.logger import logger
-from app.exceptions.quiz import (
+from app.enums import Roles, NotificationStatuses
+from app.exceptions import (
+    InvalidQuizStructure,
     QuizNotFound,
     UnauthorizedQuizAction,
-    InvalidQuizStructure,
 )
-from app.enums.roles import Roles
+from app.schemas.notification import NotificationCreate
+from app.schemas.question import QuestionsListCreate
+from app.schemas.quiz import QuizCreate, QuizList, QuizSchema, QuizUpdate
+from app.services.notification import NotificationService
+from app.unit_of_work import UnitOfWork
+from app.utils import LoggerUtil
 
 
 class QuizService:
+    def __init__(self):
+        self.logger_util = LoggerUtil()
+        self.notification_service = NotificationService()
+
     async def _check_user_permissions(
         self, uow: UnitOfWork, company_id: UUID, user_id: UUID
     ) -> None:
-        company_items, _ = await uow.company.read(
-            field="id", value=company_id, offset=0, limit=1
-        )
-        if not company_items:
-            raise UnauthorizedQuizAction
-
-        if company_items[0].owner_id == user_id:
-            return
-
         memberships, _ = await uow.membership.read(
             field="user_id", value=user_id, offset=0, limit=100
         )
 
-        allowed_roles = {Roles.ADMIN, Roles.OWNER}
         if any(
-            m.company_id == company_id and m.role in allowed_roles and m.is_active
+            m.company_id == company_id
+            and m.role in {Roles.ADMIN, Roles.OWNER}
+            and m.is_active
             for m in memberships
         ):
             return
 
+        self.logger_util.info("Unauthorized user")
         raise UnauthorizedQuizAction
+
+    async def _get_quiz_by_id(self, uow, quiz_id: UUID) -> QuizSchema | None:
+        quiz_with_question, _ = await uow.quizzes.read(
+            field="id",
+            value=quiz_id,
+            offset=0,
+            limit=1,
+            load_relationships=["questions", "company", "questions.answer_options"],
+        )
+
+        if not quiz_with_question:
+            return None
+
+        return quiz_with_question[0]
 
     async def create_quiz(
         self,
@@ -46,105 +58,100 @@ class QuizService:
         questions_data: QuestionsListCreate,
         current_user_id: UUID,
     ) -> QuizSchema:
-        try:
-            await self._check_user_permissions(uow, data.company_id, current_user_id)
+        await self._check_user_permissions(uow, data.company_id, current_user_id)
 
-            questions = questions_data.questions
+        if len(questions_data.questions) < 2:
+            self.logger_util.info("Not enough questions")
+            raise InvalidQuizStructure
 
-            if len(questions) < 2:
+        questions = questions_data.questions
+
+        for question in questions:
+            if not question.title:
+                self.logger_util.info("Question title is required")
                 raise InvalidQuizStructure
 
-            for question in questions:
-                if not question.title:
-                    raise InvalidQuizStructure
-                options = question.answer_options
-                if not (2 <= len(options) <= 4):
-                    raise InvalidQuizStructure
+            options = question.answer_options
+            if not (2 <= len(options) <= 4):
+                self.logger_util.info("Invalid number of options")
+                raise InvalidQuizStructure
+            if not any(o.is_correct for o in options):
+                self.logger_util.info("Invalid options")
+                raise InvalidQuizStructure
 
-                if not any(opt.is_correct for opt in options):
-                    raise InvalidQuizStructure
+        quiz = await uow.quizzes.create(**data.model_dump())
+        await uow.session.flush()
 
-            quiz = await uow.quizzes.create(**data.model_dump())
+        for question in questions:
+            q = await uow.questions.create(quiz_id=quiz.id, title=question.title)
             await uow.session.flush()
-
-            for question in questions:
-                q = await uow.questions.create(quiz_id=quiz.id, title=question.title)
+            for opt in question.answer_options:
+                await uow.answer_options.create(
+                    question_id=q.id, text=opt.text, is_correct=opt.is_correct
+                )
                 await uow.session.flush()
-                for opt in question.answer_options:
-                    await uow.answer_options.create(
-                        question_id=q.id, text=opt.text, is_correct=opt.is_correct
-                    )
-                    await uow.session.flush()
 
-            quiz_with_questions, _ = await uow.quizzes.read(
-                field="id",
-                value=quiz.id,
-                offset=0,
-                limit=1,
-                load_relationships=["questions", "company", "questions.answer_options"],
+        quiz_with_question = await self._get_quiz_by_id(uow, quiz.id)
+
+        memberships, total = await uow.membership.read(
+            field="company_id",
+            value=data.company_id,
+            offset=0,
+            limit=100,
+            load_relationships=["user"],
+        )
+        active_members = [m for m in memberships if m.is_active]
+
+        notification = await self.notification_service.create_notification(
+            uow,
+            data=NotificationCreate(
+                message=f"New test {data.title} in your company",
+                company_id=data.company_id,
+            ),
+        )
+
+        await uow.session.flush()
+
+        for member in active_members:
+            await uow.user_notifications.create(
+                user_id=member.user_id,
+                notification_id=notification.id,
+                status=NotificationStatuses.UNREAD,
             )
-            return QuizSchema.model_validate(quiz_with_questions[0])
 
-        except (UnauthorizedQuizAction, InvalidQuizStructure):
-            raise
-        except Exception as e:
-            logger.exception(f"Error while creating quiz: {e}")
-            raise InternalErrorException
+        return QuizSchema.model_validate(quiz_with_question)
 
     async def read_quiz_by_id(
         self, uow: UnitOfWork, quiz_id: UUID, current_user_id: UUID
     ) -> QuizSchema | None:
-        try:
-            items, _ = await uow.quizzes.read(
-                field="id",
-                value=quiz_id,
-                offset=0,
-                limit=1,
-                load_relationships=["questions", "company", "questions.answer_options"],
-            )
-            if not items:
-                raise QuizNotFound
+        quiz = await self._get_quiz_by_id(uow, quiz_id)
 
-            quiz = items[0]
+        memberships, _ = await uow.membership.read(
+            field="user_id", value=current_user_id, offset=0, limit=100
+        )
 
-            memberships, _ = await uow.membership.read(
-                field="user_id", value=current_user_id, offset=0, limit=100
-            )
+        active_membership = [
+            m for m in memberships if m.company_id == quiz.company.id and m.is_active
+        ]
+        if not active_membership:
+            self.logger_util.info("No active membership")
+            raise UnauthorizedQuizAction
 
-            active_memberships = [
-                m
-                for m in memberships
-                if m.company_id == quiz.company.id and m.is_active
-            ]
-            if not active_memberships:
-                raise UnauthorizedQuizAction
-
-            return QuizSchema.model_validate(quiz)
-
-        except (QuizNotFound, UnauthorizedQuizAction):
-            raise
-        except Exception as e:
-            logger.exception(f"Error while reading quiz: {e}")
-            raise InternalErrorException
+        return QuizSchema.model_validate(quiz)
 
     async def read_company_quizzes(
         self, uow: UnitOfWork, company_id: UUID, offset: int = 0, limit: int = 20
     ) -> QuizList:
-        try:
-            items, total = await uow.quizzes.read(
-                field="company_id",
-                value=company_id,
-                offset=offset,
-                limit=limit,
-                load_relationships=["questions", "company", "questions.answer_options"],
-            )
+        items, total = await uow.quizzes.read(
+            field="company_id",
+            value=company_id,
+            offset=offset,
+            limit=limit,
+            load_relationships=["questions", "company", "questions.answer_options"],
+        )
 
-            quiz_schemas = [QuizSchema.model_validate(quiz) for quiz in items]
-            return QuizList(quizzes=quiz_schemas, total=total)
-
-        except Exception as e:
-            logger.exception(f"Error while reading company quizzes: {e}")
-            raise InternalErrorException
+        quiz_schemas = [QuizSchema.model_validate(quiz) for quiz in items]
+        return QuizList(quizzes=quiz_schemas, total=total)
 
     async def update_quiz(
         self,
@@ -153,64 +160,53 @@ class QuizService:
         data: QuizUpdate,
         current_user_id: UUID,
     ) -> QuizSchema:
-        try:
-            quiz = await self.read_quiz_by_id(uow, quiz_id, current_user_id)
-            await self._check_user_permissions(uow, quiz.company_id, current_user_id)
+        quiz = await self.read_quiz_by_id(uow, quiz_id, current_user_id)
+        await self._check_user_permissions(uow, quiz.company_id, current_user_id)
 
-            update_data = data.model_dump(exclude={"questions"}, exclude_unset=True)
-            if update_data:
-                await uow.quizzes.update_by("id", quiz_id, **update_data)
+        update_data = data.model_dump(exclude={"questions"}, exclude_unset=True)
+        if update_data:
+            await uow.quizzes.update_by("id", quiz_id, **update_data)
+            await uow.session.flush()
+
+        for question in data.questions:
+            if question.id:
+                new_question = await uow.questions.update_by(
+                    "id", question.id, title=question.title
+                )
+            else:
+                new_question = await uow.questions.create(
+                    quiz_id=quiz_id, title=question.title
+                )
                 await uow.session.flush()
 
-            for question in data.questions:
-                if question.id:
-                    new_question = await uow.questions.update_by(
-                        "id", question.id, title=question.title
+            for option in question.answer_options:
+                if option.id:
+                    await uow.answer_options.update_by(
+                        "id", option.id, **data.model_dump()
                     )
                 else:
-                    new_question = await uow.questions.create(
-                        quiz_id=quiz_id, title=question.title
+                    await uow.answer_options.create(
+                        question_id=new_question.id, **data.model_dump()
                     )
                     await uow.session.flush()
 
-                for option in question.answer_options:
-                    if option.id:
-                        await uow.answer_options.update_by(
-                            "id", option.id, **data.model_dump()
-                        )
-                    else:
-                        await uow.answer_options.create(
-                            question_id=new_question.id, **data.model_dump()
-                        )
-                        await uow.session.flush()
+        quiz_with_questions, _ = await uow.quizzes.read(
+            field="id",
+            value=quiz_id,
+            offset=0,
+            limit=1,
+            load_relationships=["questions", "company", "questions.answer_options"],
+        )
 
-            quiz_with_questions, _ = await uow.quizzes.read(
-                field="id",
-                value=quiz_id,
-                offset=0,
-                limit=1,
-                load_relationships=["questions", "company", "questions.answer_options"],
-            )
-
-            return QuizSchema.model_validate(quiz_with_questions[0])
-
-        except (QuizNotFound, UnauthorizedQuizAction):
-            raise
-        except Exception as e:
-            logger.exception(f"Error while updating quiz: {e}")
-            raise InternalErrorException
+        return QuizSchema.model_validate(quiz_with_questions[0])
 
     async def delete_quiz(
         self, uow: UnitOfWork, quiz_id: UUID, current_user_id: UUID
     ) -> None:
-        try:
-            quiz = await self.read_quiz_by_id(uow, quiz_id, current_user_id)
-            await self._check_user_permissions(uow, quiz.company_id, current_user_id)
+        quiz = await self._get_quiz_by_id(uow, quiz_id)
+        if quiz is None:
+            self.logger_util.info("Quiz not found")
+            raise QuizNotFound
+        await self._check_user_permissions(uow, quiz.company_id, current_user_id)
 
-            await uow.quizzes.delete_by("id", quiz_id)
-
-        except (QuizNotFound, UnauthorizedQuizAction):
-            raise
-        except Exception as e:
-            logger.exception(f"Error while deleting quiz: {e}")
-            raise InternalErrorException
+        await uow.quizzes.delete_by("id", quiz_id)
