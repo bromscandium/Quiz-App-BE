@@ -20,6 +20,7 @@ Quiz-App-BE/
 │ ├── routers/                      # Routers for application
 │ ├── schemas/                      # Pydantic schemas for data validation
 │ ├── services/                     # Business logic and services
+│ ├── tasks/                        # Tasks for celery
 │ ├── unit_of_work/                 # Unit of work
 │ ├── utils/                        # Helper functions and utilities
 │ ├── __init__.py 
@@ -34,6 +35,7 @@ Quiz-App-BE/
 │ └── pytest.ini                    # Initial setup for tests
 ├── .dockerignore 
 ├── .env.sample                     # Example environment variables, without secrets
+├── .env.test                       # enviroment for test database
 ├── .gitignore 
 ├── .pre-commit-config.yaml         # Configuration for pre-commit hooks
 ├── alembic.ini                 
@@ -57,13 +59,13 @@ cd Quiz-App-BE
 2. Build and run the Docker:
 
 ```bash
-docker-compose up
+docker-compose up --build
 ```
 
 3. Rebuild After Code Changes:
 
 ```bash
-docker-compose up --build
+docker-compose up 
 ```
 
 4. Stop Services:

@@ -44,6 +44,23 @@ services:
       timeout: 5s
       retries: 5
 
+  celery-worker:
+    build: .
+    command: poetry run celery -A app.db.celery_worker worker --loglevel=info
+    depends_on:
+      - app
+      - redis
+    restart: unless-stopped
+
+  celery-beat:
+    build: .
+    command: poetry run celery -A app.db.celery_worker beat --loglevel=info
+    depends_on:
+      - redis
+      - celery-worker
+    restart: unless-stopped
+
+
   test-db:
     image: postgres:17
     environment:
