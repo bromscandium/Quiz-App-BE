@@ -1,9 +1,10 @@
 import uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, Boolean
-from sqlalchemy.dialects.postgresql import UUID
 
-from app.models import Base
+from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import Base
 
 
 class Company(Base):
@@ -34,5 +35,9 @@ class Company(Base):
     )
 
     quiz_attempts: Mapped[list["QuizAttempt"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+
+    notifications: Mapped[list["Notification"]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )

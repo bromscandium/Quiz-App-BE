@@ -54,7 +54,9 @@ dependencies = [
     "bcrypt (>=5.0.0,<6.0.0)",
     "python-jose[cryptography] (>=3.5.0,<4.0.0)",
     "requests (>=2.32.5,<3.0.0)",
-    "aiosqlite (>=0.21.0,<0.22.0)"
+    "aiosqlite (>=0.21.0,<0.22.0)",
+    "black (>=25.9.0,<26.0.0)",
+    "celery[redis] (>=5.5.3,<6.0.0)"
 ]
 
 
@@ -71,9 +73,13 @@ dev = [
     "ruff (>=0.13.2,<0.14.0)",
     "pre-commit (>=4.3.0,<5.0.0)",
     "pytest-env (>=1.1.5,<2.0.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)"
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "black (>=25.9.0,<26.0.0)",
+    "autopep8 (>=2.3.2,<3.0.0)"
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
+[tool.poetry.dependencies]
+celery = {extras = ["redis"], version = "^5.4.0"}

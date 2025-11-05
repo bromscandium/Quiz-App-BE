@@ -1,22 +1,22 @@
 from uuid import UUID
+
 import httpx
+from starlette import status
 
-from app.exceptions.auth import (
-    InvalidCredentials,
-    InvalidRefreshToken,
-    Auth0UserFetchFailed,
-    InvalidTokenFormat,
-    AuthUserFetchFailed,
-)
-from app.exceptions.user import UserNotFound
-from app.schemas.user import UserSchema, UserCreate
-from app.schemas.auth import TokenResponse
-
-from app.unit_of_work.uow import UnitOfWork
-from app.services.user import UserService
-from app.utils.password import PasswordUtil
 from app.core.security import security_settings
-from app.utils.auth_token import AuthTokenUtil
+from app.exceptions import (
+    Auth0Failed,
+    AuthFailed,
+    InvalidEmail,
+    InvalidPassword,
+    InvalidTokenFormat,
+    UserNotFound,
+)
+from app.schemas.auth import TokenResponse
+from app.schemas.user import UserCreate, UserSchema
+from app.services.user import UserService
+from app.unit_of_work import UnitOfWork
+from app.utils import AuthTokenUtil, PasswordUtil
 
 
 class AuthService:
@@ -35,25 +35,22 @@ class AuthService:
                 headers={"Authorization": f"Bearer {token}"},
                 timeout=10.0,
             )
-        if resp.status_code != 200:
-            raise Auth0UserFetchFailed
+        if resp.status_code != status.HTTP_200_OK:
+            raise Auth0Failed
 
         return resp.json()
 
     async def fetch_auth_userinfo(self, token: str) -> UUID:
-        try:
-            if not token or len(token.split(".")) != 3:
-                raise InvalidTokenFormat
+        if not token or len(token.split(".")) != 3:
+            raise InvalidTokenFormat
 
-            payload = self.auth_token.decode_token(token)
-            user_id: UUID = payload.get("sub")
+        payload = self.auth_token.decode_token(token)
+        user_id: UUID = payload.get("sub")
 
-            if user_id is None:
-                raise AuthUserFetchFailed
+        if user_id is None:
+            raise AuthFailed
 
-            return UUID(user_id)
-        except (InvalidTokenFormat, AuthUserFetchFailed):
-            raise
+        return UUID(user_id)
 
     async def login(
         self, uow: UnitOfWork, email: str, password: str
@@ -63,7 +60,7 @@ class AuthService:
             return None
 
         if not self.password_util.verify_password(password, user.hashed_password):
-            return None
+            raise InvalidPassword
 
         tokens = self.auth_token.create_tokens(str(user.id))
 
@@ -78,7 +75,7 @@ class AuthService:
         email = auth0_user.get("email")
         auth0_sub = auth0_user.get("sub")
         if not email:
-            raise InvalidCredentials
+            raise InvalidEmail
 
         user: UserSchema | None = await self.user_service.read_user_by_email(uow, email)
         if not user:
@@ -106,7 +103,7 @@ class AuthService:
     async def refresh(self, old_refresh_token: str) -> TokenResponse:
         tokens = self.auth_token.refresh_tokens(old_refresh_token)
         if not tokens:
-            raise InvalidRefreshToken
+            raise InvalidTokenFormat
 
         return TokenResponse(
             access_token=tokens["access_token"],
@@ -119,12 +116,8 @@ class AuthService:
         self.auth_token.decode_token(raw_token)
 
     async def me(self, uow: UnitOfWork, user_id: UUID) -> UserSchema:
-        try:
-            user = await self.user_service.read_user_by_id(uow, user_id)
-            if not user:
-                raise UserNotFound
+        user = await self.user_service.read_user_by_id(uow, user_id)
+        if not user:
+            raise UserNotFound
 
-            return UserSchema.model_validate(user)
-
-        except (UserNotFound,):
-            raise
+        return UserSchema.model_validate(user)
