@@ -86,7 +86,7 @@ class UserService:
             raise UserNotFound
 
         update_data = data.model_dump(exclude_unset=True)
-        if "password" in update_data:
+        if update_data.get("password") is not None:
             update_data["hashed_password"] = self.password_util.hash_password(
                 update_data["password"]
             )

@@ -35,7 +35,6 @@ Quiz-App-BE/
 │ └── pytest.ini                    # Initial setup for tests
 ├── .dockerignore 
 ├── .env.sample                     # Example environment variables, without secrets
-├── .env.test                       # enviroment for test database
 ├── .gitignore 
 ├── .pre-commit-config.yaml         # Configuration for pre-commit hooks
 ├── alembic.ini                 

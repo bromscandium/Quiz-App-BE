@@ -96,11 +96,11 @@ class MembershipService:
         limit: int = 20,
         roles: set[Roles] | None = None,
     ) -> CompanyMembershipsList | None:
-        if not await check_owner_permission(current_user_id, uow, company_id):
-            self.logger_util.info("Owner not athorized")
-            raise UnauthorizedCompanyOwner
+        is_owner = await check_owner_permission(current_user_id, uow, company_id)
 
-        if await check_company_visibility(company_id, uow):
+        is_public = await check_company_visibility(company_id, uow)
+
+        if not is_public and not is_owner:
             self.logger_util.info("Company is private")
             raise PrivateCompany
 
@@ -162,7 +162,11 @@ class MembershipService:
         self, uow: UnitOfWork, membership_id: UUID, current_user_id: UUID
     ) -> None:
         membership, _ = await uow.membership.read(
-            field="id", value=membership_id, offset=0, limit=1
+            field="id",
+            value=membership_id,
+            offset=0,
+            limit=1,
+            load_relationships=["company"],
         )
 
         if not membership:
@@ -170,7 +174,7 @@ class MembershipService:
             raise MembershipNotFound
 
         if not await check_owner_permission(
-            current_user_id, uow, membership[0].company_id
+            current_user_id, uow, membership[0].company.id
         ):
             self.logger_util.info("Owner is not authorized")
             raise UnauthorizedCompanyOwner

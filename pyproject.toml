@@ -75,11 +75,13 @@ dev = [
     "pytest-env (>=1.1.5,<2.0.0)",
     "python-dotenv (>=1.1.1,<2.0.0)",
     "black (>=25.9.0,<26.0.0)",
-    "autopep8 (>=2.3.2,<3.0.0)"
+    "autopep8 (>=2.3.2,<3.0.0)",
+    "polyfactory (>=2.22.3,<3.0.0)"
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies]
+python = ">=3.12,<4.0"
 celery = {extras = ["redis"], version = "^5.4.0"}

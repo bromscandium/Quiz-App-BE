@@ -182,11 +182,12 @@ class QuizService:
             for option in question.answer_options:
                 if option.id:
                     await uow.answer_options.update_by(
-                        "id", option.id, **data.model_dump()
+                        "id", option.id, **option.model_dump(exclude_unset=True)
                     )
                 else:
                     await uow.answer_options.create(
-                        question_id=new_question.id, **data.model_dump()
+                        question_id=new_question.id,
+                        **option.model_dump(exclude_unset=True),
                     )
                     await uow.session.flush()
 

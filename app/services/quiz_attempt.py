@@ -29,12 +29,12 @@ class QuizAttemptService:
         require_admin_or_owner: bool = False,
     ) -> None:
         if quiz_attempt_id:
-            quiz_attempt = await uow.quiz_attempts.read("id", quiz_attempt_id)
+            quiz_attempt, _ = await uow.quiz_attempts.read("id", quiz_attempt_id)
             if not quiz_attempt:
                 self.logger_util.info("Unable to find quiz attempt")
                 raise UnauthorizedQuizAttempt
-            company_id = quiz_attempt.company_id
-            if quiz_attempt.user_id == current_user_id:
+            company_id = quiz_attempt[0].company_id
+            if quiz_attempt[0].user_id == current_user_id:
                 return
 
         memberships, _ = await uow.membership.read(

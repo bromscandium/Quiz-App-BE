@@ -4,14 +4,14 @@ from fastapi import status, HTTPException
 class NotFoundActionType(HTTPException):
     def __init__(self):
         super().__init__(
-            detail="Not found action type",
+            detail="Not found action type", status_code=status.HTTP_400_BAD_REQUEST
         )
 
 
 class CompanyActionNotFound(HTTPException):
     def __init__(self):
         super().__init__(
-            detail="Company action not found",
+            detail="Company action not found", status_code=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -27,4 +27,5 @@ class NotProvidedInfoForCompanyAction(HTTPException):
     def __init__(self):
         super().__init__(
             detail="No provided information for sending company actio",
+            status_code=status.HTTP_400_BAD_REQUEST,
         )

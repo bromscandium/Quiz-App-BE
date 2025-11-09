@@ -3,7 +3,9 @@ from fastapi import status, HTTPException
 
 class InvalidTokenFormat(HTTPException):
     def __init__(self):
-        super().__init__(detail="Invalid token format")
+        super().__init__(
+            detail="Invalid token format", status_code=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class Auth0Failed(HTTPException):

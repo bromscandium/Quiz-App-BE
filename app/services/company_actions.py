@@ -49,8 +49,8 @@ class CompanyActionsService:
     async def _validate_user_permission(
         self, uow: UnitOfWork, company_action: CompanyActionSchema, user_id: UUID
     ):
-        is_owner = await check_owner_permission(user_id, uow, company_action.company_id)
-        is_current_user = user_id == company_action.user_id
+        is_owner = await check_owner_permission(user_id, uow, company_action.company.id)
+        is_current_user = user_id == company_action.user.id
 
         if not is_owner and not is_current_user:
             self.logger_util.info("Cannot validate user permission")
@@ -185,8 +185,8 @@ class CompanyActionsService:
 
             if data.status == ActionStatuses.ACCEPTED:
                 membership_data = MembershipCreate(
-                    user_id=company_action.user_id,
-                    company_id=company_action.company_id,
+                    user_id=company_action.user.id,
+                    company_id=company_action.company.id,
                     role=Roles.MEMBER,
                     is_active=True,
                 )
