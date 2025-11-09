@@ -2,13 +2,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
-from app.dependencies.auth_token import get_auth_user_from_token
+from app.dependencies import *
+from app.schemas.auth import LoginRequest, TokenRequest, TokenResponse
 from app.schemas.user import UserSchema
-from app.schemas.auth import LoginRequest, TokenResponse, TokenRequest
-from app.unit_of_work.uow import UnitOfWork
-from app.dependencies.auth0_token import get_auth0_user_from_token
-from app.dependencies.uow import get_uow
-from app.services.auth import AuthService
+from app.services import AuthService
+from app.unit_of_work import UnitOfWork
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

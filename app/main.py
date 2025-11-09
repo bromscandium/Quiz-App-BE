@@ -1,12 +1,13 @@
 from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.utils.logger import logger
 from app.core.app import app_settings
 from app.db.redis import RedisClient
 from app.routers import routers
+from app.utils import LoggerUtil
 
 
 @asynccontextmanager
@@ -15,7 +16,7 @@ async def lifespan(app: FastAPI):
         await RedisClient.connect()
         app.state.redis = RedisClient
         yield
-    except Exception as e:
+    except Exception:
         raise
     finally:
         await app.state.redis.close()
@@ -39,7 +40,7 @@ def start():
     uvicorn.run(
         "app.main:app", host=app_settings.host, port=app_settings.port, reload=True
     )
-    logger.info("Server started")
+    LoggerUtil.info(msg="Server started")
 
 
 if __name__ == "__main__":

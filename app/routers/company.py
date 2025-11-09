@@ -1,18 +1,16 @@
-from fastapi import APIRouter, Depends, status
 from uuid import UUID
 
-from app.dependencies.auth_token import get_auth_user_from_token
+from fastapi import APIRouter, Depends, status
 
-from app.dependencies.uow import get_uow
+from app.dependencies import get_auth_user_from_token, get_uow
 from app.schemas.company import (
-    CompanySchema,
-    CompanyCreate,
-    CompanyUpdate,
     CompaniesList,
+    CompanyCreate,
+    CompanySchema,
+    CompanyUpdate,
 )
-from app.services.company import CompanyService
-
-from app.unit_of_work.uow import UnitOfWork
+from app.services import CompanyService
+from app.unit_of_work import UnitOfWork
 
 company_service = CompanyService()
 

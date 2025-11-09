@@ -1,4 +1,4 @@
-from app.models import CompanyActions
+from app.models.company_actions import CompanyActions
 from app.repositories.base import BaseRepository
 
 

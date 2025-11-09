@@ -1,7 +1,7 @@
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models import Base
+from app.models.base import Base
 
 
 class User(Base):
@@ -30,5 +30,9 @@ class User(Base):
     )
 
     quiz_attempts: Mapped[list["QuizAttempt"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+    notifications: Mapped[list["UserNotification"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )

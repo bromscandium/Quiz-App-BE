@@ -1,6 +1,7 @@
-from uuid import UUID
-from app.schemas.base import Base
 from datetime import datetime
+from uuid import UUID
+
+from app.schemas.base import Base
 
 
 class UserAnswerSchema(Base):
