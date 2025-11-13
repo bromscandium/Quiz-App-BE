@@ -1,13 +1,13 @@
 import uuid
-from sqlalchemy import String, ForeignKey
+
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models import Base
-from app.models.mixins import IdMixin, TimestampMixin
+from app.models.base import Base
 
 
-class Question(Base, IdMixin, TimestampMixin):
+class Question(Base):
     __tablename__ = "questions"
 
     quiz_id: Mapped[uuid.UUID] = mapped_column(

@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: quiz-app
     build: .
     env_file:
       - .env
@@ -16,11 +17,10 @@ services:
     restart: unless-stopped
 
   postgres:
+    container_name: quiz-postgres
     image: postgres:17
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file:
+      - .env
     ports:
       - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     volumes:
@@ -32,6 +32,7 @@ services:
       retries: 5
 
   redis:
+    container_name: quiz-redis
     image: redis:8.2
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
@@ -44,22 +45,30 @@ services:
       timeout: 5s
       retries: 5
 
-  test-db:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_password
-      POSTGRES_DB: test_db
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata_test:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U test_user -d test_db" ]
-      interval: 2s
-      retries: 10
+  celery-worker:
+    container_name: quiz-celery-worker
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: poetry run celery -A app.db.celery_worker worker --loglevel=info
+    depends_on:
+      - app
+      - redis
+
+  celery-beat:
+    container_name: quiz-celery-beat
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: poetry run celery -A app.db.celery_worker beat --loglevel=info
+    depends_on:
+      - redis
+      - celery-worker
 
 volumes:
   pgdata:
   redisdata:
-  pgdata_test:

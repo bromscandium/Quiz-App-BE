@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, status
 from uuid import UUID
 
-from app.unit_of_work.uow import UnitOfWork
-from app.services.quiz import QuizService
-from app.schemas.quiz import QuizSchema, QuizCreate, QuizUpdate, QuizList
+from fastapi import APIRouter, Depends, status
+
+from app.dependencies import get_auth_user_from_token, get_uow
 from app.schemas.question import QuestionsListCreate
-from app.dependencies.uow import get_uow
-from app.dependencies.auth_token import get_auth_user_from_token
+from app.schemas.quiz import QuizCreate, QuizList, QuizSchema, QuizUpdate
+from app.services import QuizService
+from app.unit_of_work import UnitOfWork
 
 router = APIRouter(prefix="/quizzes", tags=["quizzes"])
 quiz_service = QuizService()

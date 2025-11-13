@@ -1,21 +1,18 @@
-from fastapi import APIRouter, Depends, status
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, status
 from pydantic import EmailStr
 
-from app.dependencies.auth_token import get_auth_user_from_token
-
-from app.dependencies.uow import get_uow
+from app.dependencies import get_auth_user_from_token, get_uow
 from app.schemas.user import (
     UserCreate,
-    UserSchema,
-    UserUpdate,
-    UsersList,
     UserOwnedCompaniesList,
+    UserSchema,
+    UsersList,
+    UserUpdate,
 )
-
-from app.unit_of_work.uow import UnitOfWork
-from app.services.user import UserService
+from app.services import UserService
+from app.unit_of_work import UnitOfWork
 
 user_service = UserService()
 router = APIRouter(prefix="/users", tags=["users"])

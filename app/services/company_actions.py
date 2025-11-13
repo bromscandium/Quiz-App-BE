@@ -1,37 +1,38 @@
 from uuid import UUID
 
-from app.enums.roles import Roles
-from app.enums.statuses import Statuses
-from app.exceptions.base import InternalErrorException
-from app.exceptions.company_actions import (
-    NotProvidedInfoForInvitation,
+from app.enums import *
+from app.exceptions import (
+    CompanyActionNotFound,
+    NotAllowedChangeCompanyAction,
     NotFoundActionType,
     PrivateCompany,
-    NotAllowedChangeCompanyAction,
-    CompanyActionNotFound,
+    UnauthorizedUserAction,
+    UnauthorizedCompanyOwner,
+    NotProvidedInfoForCompanyAction,
 )
-from app.exceptions.user import UnauthorizedUserAction
-from app.permissions.company import check_company_visibility
+
+from app.permissions import *
 from app.schemas.company_actions import (
-    CompanyActionSchema,
-    CompanyActionUpdate,
     CompanyActionCreate,
+    CompanyActionSchema,
     CompanyActionsList,
+    CompanyActionUpdate,
 )
 from app.schemas.membership import MembershipCreate
 from app.services.membership import MembershipService
-from app.unit_of_work.uow import UnitOfWork
-from app.enums.action_types import ActionTypes
-from app.permissions.ownership import check_owner_permission
-from app.utils.logger import logger
+from app.unit_of_work import UnitOfWork
+from app.utils import LoggerUtil
 
 
 class CompanyActionsService:
     def __init__(self):
         self.membership_service = MembershipService()
+        self.logger_util = LoggerUtil()
 
-    async def _get_company_action_by_id(self, uow: UnitOfWork, action_id: UUID):
-        items, _ = await uow.company_actions.read(
+    async def _get_company_action_by_id(
+        self, uow: UnitOfWork, action_id: UUID
+    ) -> CompanyActionSchema | None:
+        company, _ = await uow.company_actions.read(
             field="id",
             value=action_id,
             offset=0,
@@ -40,87 +41,67 @@ class CompanyActionsService:
             use_joined_load=False,
         )
 
-        if not items:
-            raise CompanyActionNotFound
+        if not company:
+            return None
 
-        return items[0]
+        return company[0]
+
+    async def _validate_user_permission(
+        self, uow: UnitOfWork, company_action: CompanyActionSchema, user_id: UUID
+    ):
+        is_owner = await check_owner_permission(user_id, uow, company_action.company.id)
+        is_current_user = user_id == company_action.user.id
+
+        if not is_owner and not is_current_user:
+            self.logger_util.info("Cannot validate user permission")
+            raise UnauthorizedUserAction
 
     async def create_company_action(
         self, uow: UnitOfWork, current_user_id: UUID, data: CompanyActionCreate
     ) -> CompanyActionSchema:
-        try:
-            if data.action_type == ActionTypes.INVITATION:
-                await check_owner_permission(
-                    current_user_id, uow, company_id=data.company_id
+        if data.action_type == ActionTypes.INVITATION:
+            if not await check_owner_permission(
+                current_user_id, uow, company_id=data.company_id
+            ):
+                self.logger_util.info("Cannot create invitation action")
+                raise UnauthorizedCompanyOwner
+            if data.user_id is None and data.invited_email is None:
+                self.logger_util.info(
+                    "Cannot create invitation action without user or invited email"
                 )
-                if data.user_id is None and data.invited_email is None:
-                    raise NotProvidedInfoForInvitation
+                raise NotProvidedInfoForCompanyAction
 
-            elif data.action_type == ActionTypes.REQUEST:
-                is_public = await check_company_visibility(
-                    company_id=data.company_id, uow=uow
-                )
-                if not is_public:
-                    raise PrivateCompany
-                if current_user_id != data.user_id:
-                    raise UnauthorizedUserAction
-            else:
-                raise NotFoundActionType
-
-            company_action = await uow.company_actions.create(**data.model_dump())
-            await uow.session.flush()
-
-            company_action = await self._get_company_action_by_id(
-                uow, company_action.id
+        elif data.action_type == ActionTypes.REQUEST:
+            is_public = await check_company_visibility(
+                company_id=data.company_id, uow=uow
             )
+            if not is_public:
+                self.logger_util.info("Cannot create request action")
+                raise PrivateCompany
+            if current_user_id != data.user_id:
+                self.logger_util.info(
+                    "Cannot create request action without current user"
+                )
+                raise NotProvidedInfoForCompanyAction
+        else:
+            self.logger_util.info("Cannot create company action")
+            raise NotFoundActionType
 
-            return CompanyActionSchema.model_validate(company_action)
-        except (
-            NotFoundActionType,
-            NotProvidedInfoForInvitation,
-            UnauthorizedUserAction,
-            PrivateCompany,
-        ):
-            raise
-        except Exception as e:
-            logger.exception(f"Error while creating company action: {e}")
-            raise InternalErrorException
+        company_action = await uow.company_actions.create(**data.model_dump())
+        await uow.session.flush()
+
+        company_action = await self._get_company_action_by_id(uow, company_action.id)
+
+        return CompanyActionSchema.model_validate(company_action)
 
     async def read_company_action_by_id(
         self, uow: UnitOfWork, current_user_id: UUID, company_action_id: UUID
     ) -> CompanyActionSchema:
-        try:
-            company_action = await self._get_company_action_by_id(
-                uow, company_action_id
-            )
+        company_action = await self._get_company_action_by_id(uow, company_action_id)
 
-            if company_action.action_type == ActionTypes.INVITATION:
-                is_owner = await check_owner_permission(
-                    current_user_id, uow, company_action.company_id
-                )
-                is_invited_user = current_user_id == company_action.user_id
+        await self._validate_user_permission(uow, company_action, current_user_id)
 
-                if not is_owner and not is_invited_user:
-                    raise UnauthorizedUserAction
-
-            elif company_action.action_type == ActionTypes.REQUEST:
-                is_owner = await check_owner_permission(
-                    current_user_id, uow, company_action.company_id
-                )
-                is_requesting_user = current_user_id == company_action.user_id
-
-                if not is_owner and not is_requesting_user:
-                    raise UnauthorizedUserAction
-            else:
-                raise NotFoundActionType
-
-            return CompanyActionSchema.model_validate(company_action)
-
-        except (NotFoundActionType, UnauthorizedUserAction, CompanyActionNotFound):
-            raise
-        except Exception as e:
-            logger.exception(f"Error while reading company action by id: {e}")
-            raise InternalErrorException
+        return CompanyActionSchema.model_validate(company_action)
 
     async def read_company_actions(
         self,
@@ -128,76 +109,64 @@ class CompanyActionsService:
         current_user_id: UUID,
         action_type: ActionTypes | None = None,
         company_id: UUID | None = None,
-        status: Statuses | None = None,
+        status: ActionStatuses | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> CompanyActionsList:
-        try:
-            if company_id:
-                await check_owner_permission(current_user_id, uow, company_id)
-                items, total = await uow.company_actions.read(
-                    field="company_id",
-                    value=company_id,
-                    offset=offset,
-                    limit=limit,
-                    load_relationships=["user", "company", "company.owner"],
-                )
-
-                if action_type == ActionTypes.INVITATION:
-                    filtered_items = [
-                        c for c in items if c.action_type == ActionTypes.INVITATION
-                    ]
-                elif action_type == ActionTypes.REQUEST:
-                    filtered_items = [
-                        c for c in items if c.action_type == ActionTypes.REQUEST
-                    ]
-                else:
-                    filtered_items = items
-            else:
-                items, total = await uow.company_actions.read(
-                    field="user_id",
-                    value=current_user_id,
-                    offset=offset,
-                    limit=limit,
-                    load_relationships=["user", "company", "company.owner"],
-                )
-
-                if action_type == ActionTypes.INVITATION:
-                    filtered_items = [
-                        c for c in items if c.action_type == ActionTypes.INVITATION
-                    ]
-                elif action_type == ActionTypes.REQUEST:
-                    filtered_items = [
-                        c for c in items if c.action_type == ActionTypes.REQUEST
-                    ]
-                else:
-                    filtered_items = items
-
-            if status is not None:
-                filtered_items = [c for c in filtered_items if c.status == status]
-
-            validated_items = [
-                CompanyActionSchema.model_validate(c) for c in filtered_items
-            ]
-
-            return CompanyActionsList(
-                actions=validated_items,
-                total=len(filtered_items),
-                pending_total=sum(
-                    1 for c in filtered_items if c.status == Statuses.PENDING
-                ),
-                accepted_total=sum(
-                    1 for c in filtered_items if c.status == Statuses.ACCEPTED
-                ),
-                cancelled_total=sum(
-                    1 for c in filtered_items if c.status == Statuses.CANCELLED
-                ),
+        if company_id:
+            if not await check_owner_permission(current_user_id, uow, company_id):
+                self.logger_util.info("User is not owner")
+                raise UnauthorizedCompanyOwner
+            company_actions, total = await uow.company_actions.read(
+                field="company_id",
+                value=company_id,
+                offset=offset,
+                limit=limit,
+                load_relationships=["user", "company", "company.owner"],
             )
-        except UnauthorizedUserAction:
-            raise
-        except Exception as e:
-            logger.exception(f"Error while reading company actions: {e}")
-            raise InternalErrorException
+
+        else:
+            company_actions, total = await uow.company_actions.read(
+                field="user_id",
+                value=current_user_id,
+                offset=offset,
+                limit=limit,
+                load_relationships=["user", "company", "company.owner"],
+            )
+
+        if action_type == ActionTypes.INVITATION:
+            filtered_items = [
+                c_a
+                for c_a in company_actions
+                if c_a.action_type == ActionTypes.INVITATION
+            ]
+        elif action_type == ActionTypes.REQUEST:
+            filtered_items = [
+                c_a for c_a in company_actions if c_a.action_type == ActionTypes.REQUEST
+            ]
+        else:
+            filtered_items = company_actions
+
+        if status is not None:
+            filtered_items = [c_a for c_a in filtered_items if c_a.status == status]
+
+        validated_items = [
+            CompanyActionSchema.model_validate(c_a) for c_a in filtered_items
+        ]
+
+        return CompanyActionsList(
+            actions=validated_items,
+            total=len(filtered_items),
+            pending_total=sum(
+                1 for c_a in filtered_items if c_a.status == ActionStatuses.PENDING
+            ),
+            accepted_total=sum(
+                1 for c_a in filtered_items if c_a.status == ActionStatuses.ACCEPTED
+            ),
+            cancelled_total=sum(
+                1 for c_a in filtered_items if c_a.status == ActionStatuses.CANCELLED
+            ),
+        )
 
     async def update_company_action(
         self,
@@ -206,29 +175,18 @@ class CompanyActionsService:
         company_action_id: UUID,
         data: CompanyActionUpdate,
     ) -> CompanyActionSchema:
-        try:
-            company_action = await self._get_company_action_by_id(
-                uow, company_action_id
-            )
+        company_action = await self._get_company_action_by_id(uow, company_action_id)
+        if company_action is None:
+            self.logger_util.info("Company action not found")
+            raise CompanyActionNotFound
 
-            if company_action.status != Statuses.PENDING:
-                raise NotAllowedChangeCompanyAction
+        if company_action.status == ActionStatuses.PENDING:
+            await self._validate_user_permission(uow, company_action, current_user_id)
 
-            if company_action.action_type == ActionTypes.INVITATION:
-                if current_user_id != company_action.user_id:
-                    raise UnauthorizedUserAction
-
-            elif company_action.action_type == ActionTypes.REQUEST:
-                await check_owner_permission(
-                    current_user_id, uow, company_action.company_id
-                )
-            else:
-                raise NotFoundActionType
-
-            if data.status == Statuses.ACCEPTED:
+            if data.status == ActionStatuses.ACCEPTED:
                 membership_data = MembershipCreate(
-                    user_id=company_action.user_id,
-                    company_id=company_action.company_id,
+                    user_id=company_action.user.id,
+                    company_id=company_action.company.id,
                     role=Roles.MEMBER,
                     is_active=True,
                 )
@@ -244,42 +202,18 @@ class CompanyActionsService:
             )
 
             return CompanyActionSchema.model_validate(company_action)
-
-        except (
-            NotFoundActionType,
-            NotAllowedChangeCompanyAction,
-            UnauthorizedUserAction,
-            CompanyActionNotFound,
-        ):
-            raise
-        except Exception as e:
-            logger.exception(f"Error while updating company action: {e}")
-            raise InternalErrorException
+        else:
+            self.logger_util.info("Cannot update company action")
+            raise NotAllowedChangeCompanyAction
 
     async def delete_company_action(
         self, uow: UnitOfWork, current_user_id: UUID, company_action_id: UUID
     ) -> None:
-        try:
-            company_action = await self._get_company_action_by_id(
-                uow, company_action_id
-            )
+        company_action = await self._get_company_action_by_id(uow, company_action_id)
+        if company_action is None:
+            self.logger_util.info("Company action not found")
+            raise CompanyActionNotFound
 
-            if company_action.action_type == ActionTypes.INVITATION:
-                await check_owner_permission(
-                    current_user_id, uow, company_action.company_id
-                )
+        await self._validate_user_permission(uow, company_action, current_user_id)
 
-            elif company_action.action_type == ActionTypes.REQUEST:
-                if current_user_id != company_action.user_id:
-                    raise UnauthorizedUserAction
-            else:
-                raise NotFoundActionType
-
-            await uow.company_actions.delete_by("id", company_action_id)
-            await uow.session.flush()
-
-        except (UnauthorizedUserAction, NotFoundActionType, CompanyActionNotFound):
-            raise
-        except Exception as e:
-            logger.exception(f"Error while deleting company action: {e}")
-            raise InternalErrorException
+        await uow.company_actions.delete_by("id", company_action_id)

@@ -1,36 +1,37 @@
-from fastapi import HTTPException, status
+from fastapi import status, HTTPException
 
 
-class AuthException(HTTPException):
-    def __init__(self, detail: str, status_code: int = status.HTTP_401_UNAUTHORIZED):
-        super().__init__(status_code=status_code, detail=detail)
-
-
-class InvalidCredentials(AuthException):
+class InvalidTokenFormat(HTTPException):
     def __init__(self):
-        super().__init__(detail="Invalid email or password")
+        super().__init__(
+            detail="Invalid token format", status_code=status.HTTP_400_BAD_REQUEST
+        )
 
 
-class InvalidRefreshToken(AuthException):
+class Auth0Failed(HTTPException):
     def __init__(self):
-        super().__init__(detail="Invalid refresh token")
+        super().__init__(
+            detail="Failed to fetch user info from Auth0 method",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
 
 
-class InvalidTokenFormat(AuthException):
+class AuthFailed(HTTPException):
     def __init__(self):
-        super().__init__(detail="Invalid token format")
+        super().__init__(
+            detail="Failed to fetch user info", status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
 
-class Auth0UserFetchFailed(AuthException):
+class InvalidEmail(HTTPException):
     def __init__(self):
-        super().__init__(detail="Failed to fetch user info from Auth0")
+        super().__init__(
+            detail="Invalid email", status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
 
-class AuthUserFetchFailed(AuthException):
+class InvalidPassword(HTTPException):
     def __init__(self):
-        super().__init__(detail="Failed to authenticate the user")
-
-
-class InvalidTokenHeader(AuthException):
-    def __init__(self):
-        super().__init__(detail="Invalid token header")
+        super().__init__(
+            detail="Invalid password", status_code=status.HTTP_401_UNAUTHORIZED
+        )
