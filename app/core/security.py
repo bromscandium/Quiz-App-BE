@@ -10,8 +10,8 @@ class JWTConfig(BaseConfig):
     access_token_expire_minutes: int
     refresh_token_expire_days: int
     raw_token_bytes: int
-    public_key_path: str
-    private_key_path: str
+    public_key: str
+    private_key: str
 
     model_config = SettingsConfigDict(
         env_prefix="JWT_",

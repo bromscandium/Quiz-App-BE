@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: quiz-app
     build: .
     env_file:
       - .env
@@ -16,11 +17,12 @@ services:
     restart: unless-stopped
 
   postgres:
+    container_name: quiz-postgres
     image: postgres:17
     env_file:
       - .env
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -30,9 +32,10 @@ services:
       retries: 5
 
   redis:
+    container_name: quiz-redis
     image: redis:8.2
     ports:
-      - "${REDIS_PORT}:6379"
+      - "${REDIS_PORT}:${REDIS_PORT}"
     volumes:
       - redisdata:/data
     command: [ "redis-server", "--save", "60", "1" ]
@@ -43,6 +46,7 @@ services:
       retries: 5
 
   celery-worker:
+    container_name: quiz-celery-worker
     build:
       context: .
       dockerfile: Dockerfile
@@ -54,6 +58,7 @@ services:
       - redis
 
   celery-beat:
+    container_name: quiz-celery-beat
     build:
       context: .
       dockerfile: Dockerfile
@@ -64,60 +69,6 @@ services:
       - redis
       - celery-worker
 
-  test-postgres:
-    image: postgres:17
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${TEST_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD}
-      POSTGRES_DB: ${TEST_POSTGRES_DB}
-    ports:
-      - "${TEST_POSTGRES_PORT}:5432"
-    volumes:
-      - pgdata_test:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${TEST_POSTGRES_USER} -d ${TEST_POSTGRES_DB}" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  test-redis:
-    image: redis:8.2
-    env_file:
-      - .env
-    ports:
-      - "${TEST_REDIS_PORT}:6379"
-    volumes:
-      - redisdata_test:/data
-    command: [ "redis-server", "--save", "60", "1" ]
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  test-celery-worker:
-    build: .
-    env_file:
-      - .env
-    command: poetry run celery -A app.db.celery_worker worker --loglevel=info
-    depends_on:
-      - app
-      - test-redis
-
-  test-celery-beat:
-    build: .
-    env_file:
-      - .env
-    command: poetry run celery -A app.db.celery_worker beat --loglevel=info
-    depends_on:
-      - test-redis
-      - test-celery-worker
-
-
 volumes:
   pgdata:
   redisdata:
-  pgdata_test:
-  redisdata_test:

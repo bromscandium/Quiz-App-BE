@@ -12,14 +12,17 @@ from app.utils import LoggerUtil
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    redis_client = None
     try:
         await RedisClient.connect()
-        app.state.redis = RedisClient
+        redis_client = RedisClient
+        app.state.redis = redis_client
         yield
-    except Exception:
-        raise
+    except Exception as e:
+        raise e
     finally:
-        await app.state.redis.close()
+        if redis_client:
+            await redis_client.close()
 
 
 app = FastAPI(title="Quiz App Backend", version="0.1.0", lifespan=lifespan)
@@ -40,7 +43,8 @@ def start():
     uvicorn.run(
         "app.main:app", host=app_settings.host, port=app_settings.port, reload=True
     )
-    LoggerUtil.info(msg="Server started")
+    logger = LoggerUtil()
+    logger.info(msg="Server started")
 
 
 if __name__ == "__main__":

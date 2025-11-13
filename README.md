@@ -29,7 +29,10 @@ Quiz-App-BE/
 ├── migrations/                     # Alembic migrations for database
 ├── secrets/                        # Public and private keys for RSA
 ├── tests/
-│ ├── services/                     # Services tests
+│ ├── core/                        
+│ ├── factories/                   
+│ ├── fixtures/                   
+│ ├── test_services/                    
 │ ├── __init__.py 
 │ ├── conftest.py 
 │ └── pytest.ini                    # Initial setup for tests
@@ -38,6 +41,7 @@ Quiz-App-BE/
 ├── .gitignore 
 ├── .pre-commit-config.yaml         # Configuration for pre-commit hooks
 ├── alembic.ini                 
+├── docker-compose.test.yml         # Docker Compose orchestration for testing
 ├── docker-compose.yml              # Docker Compose orchestration
 ├── Dockerfile                      # Dockerfile for building the app container 
 ├── poetry.lock 
