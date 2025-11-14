@@ -3,6 +3,7 @@
 venv/
 .ssh/
 
+.secrets
 .env
 secrets/
 scripts/

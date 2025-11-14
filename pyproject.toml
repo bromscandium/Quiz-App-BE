@@ -1,6 +1,6 @@
 [project]
-name = "app"
-version = "0.1.0"
+name = "Quiz App Backend"
+version = "1.0.0"
 description = "backend packages for Quiz App"
 authors = [
     { name = "bromscandium" }

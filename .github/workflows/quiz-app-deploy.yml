@@ -8,9 +8,7 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+    environment: Quiz-App
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -37,7 +35,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: production
+    environment: Quiz-App
     steps:
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1.2.3
