@@ -16,35 +16,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  postgres:
-    container_name: quiz-postgres
-    image: postgres:17
-    env_file:
-      - .env
-    ports:
-      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    container_name: quiz-redis
-    image: redis:8.2
-    ports:
-      - "${REDIS_PORT}:${REDIS_PORT}"
-    volumes:
-      - redisdata:/data
-    command: [ "redis-server", "--save", "60", "1" ]
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   celery-worker:
     container_name: quiz-celery-worker
     build:
@@ -68,7 +39,3 @@ services:
     depends_on:
       - redis
       - celery-worker
-
-volumes:
-  pgdata:
-  redisdata:
