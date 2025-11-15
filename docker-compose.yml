@@ -26,7 +26,6 @@ services:
     command: poetry run celery -A app.db.celery_worker worker --loglevel=info
     depends_on:
       - app
-      - redis
 
   celery-beat:
     container_name: quiz-celery-beat
@@ -37,5 +36,4 @@ services:
       - .env
     command: poetry run celery -A app.db.celery_worker beat --loglevel=info
     depends_on:
-      - redis
       - celery-worker
