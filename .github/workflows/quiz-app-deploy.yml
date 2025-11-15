@@ -6,15 +6,43 @@ on:
       - "*"
 
 jobs:
-  test-ssh:
+  build-and-push:
     runs-on: ubuntu-latest
+    environment: Quiz-App
     steps:
-      - name: Test SSH connection
-        uses: appleboy/ssh-action@v1.2.3
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.ECR_REPOSITORY }}:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-22.04
+    environment: Quiz-App
+    steps:
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
           script: |
-            echo "SSH connection successful!"
+            bash /home/ubuntu/deploy/deploy.sh
