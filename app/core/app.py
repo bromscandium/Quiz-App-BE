@@ -1,7 +1,7 @@
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
-from app.core.base import BaseConfig
+from app.core import BaseConfig
 
 
 class DbSettings(BaseConfig):
@@ -10,10 +10,7 @@ class DbSettings(BaseConfig):
     host: str
     port: int
     db: str
-    pool_size: int
-    max_overflow: int
-    pool_recycle: int
-    debug: bool
+    debug: bool = False
 
     @property
     def url(self) -> str:
@@ -30,7 +27,7 @@ class RedisSettings(BaseConfig):
 
     @property
     def url(self) -> str:
-        return f"redis://{self.host}:{self.port}"
+        return f"rediss://{self.host}:{self.port}"
 
     model_config = SettingsConfigDict(
         env_prefix="REDIS_",

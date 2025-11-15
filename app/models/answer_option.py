@@ -1,9 +1,10 @@
 import uuid
-from sqlalchemy import String, ForeignKey, Boolean
+
+from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models import Base
+from app.models.base import Base
 from app.models.mixins import IdMixin, TimestampMixin
 
 

@@ -1,10 +1,9 @@
 from fastapi import APIRouter, status
 from sqlalchemy import text
 
+from app.db import RedisClient, async_session
+from app.exceptions import HealthCheckException
 from app.schemas.health_check import HealthCheckResponse
-from app.db.postgres import async_session
-from app.db.redis import RedisClient
-from app.exceptions.health_check import HealthCheckException
 
 router = APIRouter()
 

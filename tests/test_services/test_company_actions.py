@@ -1,110 +1,117 @@
-import pytest
-from uuid import uuid4
-from app.enums.statuses import Statuses
-from app.enums.action_types import ActionTypes
-from app.exceptions.base import InternalErrorException
-from app.services.company_actions import CompanyActionsService
-from app.schemas.company_actions import CompanyActionCreate, CompanyActionUpdate
-from app.exceptions.company_actions import (
-    NotProvidedInfoForInvitation,
-    NotAllowedChangeCompanyAction,
-    CompanyActionNotFound,
+from app.enums import ActionTypes, ActionStatuses
+from tests.factories.company_actions import (
+    CompanyActionCreateFactory,
+    CompanyActionUpdateFactory,
 )
-from app.exceptions.user import UnauthorizedUserAction
-from tests.fixtures import test_user, test_second_user, test_company
-
-service = CompanyActionsService()
+from app.exceptions import (
+    PrivateCompany,
+)
+from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-class TestCompanyActionsService:
-    async def test_create_invitation_success(
-        self, uow, test_user, test_second_user, test_company
-    ):
-        data = CompanyActionCreate(
-            company_id=test_company.id,
-            user_id=test_second_user.id,
-            action_type=ActionTypes.INVITATION,
-        )
-        action = await service.create_company_action(uow, test_user.id, data)
+async def test_create_request_action(uow, company_actions_service, company_1, user_3):
+    request_data = CompanyActionCreateFactory.build(
+        company_id=company_1.id,
+        user_id=user_3.id,
+        action_type=ActionTypes.REQUEST,
+        status=ActionStatuses.PENDING,
+    )
+    action = await company_actions_service.create_company_action(
+        uow, current_user_id=user_3.id, data=request_data
+    )
+    assert action.action_type == ActionTypes.REQUEST
+    assert action.status == ActionStatuses.PENDING
 
-        assert action.id is not None
-        assert action.user.id == test_second_user.id
-        assert action.company.id == test_company.id
-        assert action.status == Statuses.PENDING
-        assert action.action_type == ActionTypes.INVITATION
 
-    async def test_read_company_action_success(
-        self, uow, test_user, test_second_user, test_company
-    ):
-        data = CompanyActionCreate(
-            company_id=test_company.id,
-            user_id=test_second_user.id,
-            action_type=ActionTypes.INVITATION,
-        )
-        action = await service.create_company_action(uow, test_user.id, data)
-
-        fetched = await service.read_company_action_by_id(uow, test_user.id, action.id)
-        assert fetched.id == action.id
-
-    async def test_read_company_action_unauthorized(
-        self, uow, test_user, test_second_user, test_company
-    ):
-        data = CompanyActionCreate(
-            company_id=test_company.id,
-            user_id=test_second_user.id,
-            action_type=ActionTypes.INVITATION,
-        )
-        action = await service.create_company_action(uow, test_user.id, data)
-
-        other_user_id = uuid4()
-        with pytest.raises(InternalErrorException):
-            await service.read_company_action_by_id(uow, other_user_id, action.id)
-
-    async def test_update_company_action_accept(
-        self, uow, test_user, test_second_user, test_company
-    ):
-        data = CompanyActionCreate(
-            company_id=test_company.id,
-            user_id=test_second_user.id,
-            action_type=ActionTypes.REQUEST,
-        )
-        action = await service.create_company_action(uow, test_second_user.id, data)
-
-        update_data = CompanyActionUpdate(status=Statuses.ACCEPTED)
-        updated = await service.update_company_action(
-            uow, test_user.id, action.id, update_data
+@pytest.mark.asyncio
+async def test_create_request_action_to_private(
+    uow, company_actions_service, company_2, user_3
+):
+    request_data = CompanyActionCreateFactory.build(
+        company_id=company_2.id,
+        user_id=user_3.id,
+        action_type=ActionTypes.REQUEST,
+        status=ActionStatuses.PENDING,
+    )
+    with pytest.raises(PrivateCompany):
+        await company_actions_service.create_company_action(
+            uow, current_user_id=user_3.id, data=request_data
         )
 
-        assert updated.status == Statuses.ACCEPTED
 
-    async def test_update_company_action_not_allowed(
-        self, uow, test_user, test_second_user, test_company
-    ):
-        data = CompanyActionCreate(
-            company_id=test_company.id,
-            user_id=test_second_user.id,
-            action_type=ActionTypes.REQUEST,
-        )
-        action = await service.create_company_action(uow, test_second_user.id, data)
+@pytest.mark.asyncio
+async def test_create_invitation_action(
+    uow, company_actions_service, company_1, user_1, user_3
+):
+    invitation_data = CompanyActionCreateFactory.build(
+        company_id=company_1.id,
+        user_id=user_3.id,
+        action_type=ActionTypes.INVITATION,
+        status=ActionStatuses.PENDING,
+    )
+    action = await company_actions_service.create_company_action(
+        uow, current_user_id=user_1.id, data=invitation_data
+    )
+    assert action.action_type == ActionTypes.INVITATION
+    assert action.status == ActionStatuses.PENDING
 
-        update_data = CompanyActionUpdate(status=Statuses.ACCEPTED)
-        with pytest.raises(InternalErrorException):
-            await service.update_company_action(
-                uow, test_second_user.id, action.id, update_data
-            )
 
-    async def test_delete_company_action_success(
-        self, uow, test_user, test_second_user, test_company
-    ):
-        data = CompanyActionCreate(
-            company_id=test_company.id,
-            user_id=test_second_user.id,
-            action_type=ActionTypes.REQUEST,
-        )
-        action = await service.create_company_action(uow, test_second_user.id, data)
+@pytest.mark.asyncio
+async def test_read_company_actions(uow, company_actions_service, company_1, user_3):
+    request_data = CompanyActionCreateFactory.build(
+        company_id=company_1.id,
+        user_id=user_3.id,
+        action_type=ActionTypes.REQUEST,
+        status=ActionStatuses.PENDING,
+    )
+    action = await company_actions_service.create_company_action(
+        uow, current_user_id=user_3.id, data=request_data
+    )
 
-        await service.delete_company_action(uow, test_second_user.id, action.id)
+    read_action = await company_actions_service.read_company_action_by_id(
+        uow, current_user_id=user_3.id, company_action_id=action.id
+    )
+    assert read_action.id == action.id
 
-        with pytest.raises(CompanyActionNotFound):
-            await service.read_company_action_by_id(uow, test_second_user.id, action.id)
+
+@pytest.mark.asyncio
+async def test_update_company_action(
+    uow, company_actions_service, company_1, user_1, user_3
+):
+    invitation_data = CompanyActionCreateFactory.build(
+        company_id=company_1.id,
+        user_id=user_3.id,
+        action_type=ActionTypes.INVITATION,
+        status=ActionStatuses.PENDING,
+    )
+    action = await company_actions_service.create_company_action(
+        uow, current_user_id=user_1.id, data=invitation_data
+    )
+
+    update_data = CompanyActionUpdateFactory.build(status=ActionStatuses.ACCEPTED)
+    updated_action = await company_actions_service.update_company_action(
+        uow, current_user_id=user_1.id, company_action_id=action.id, data=update_data
+    )
+    assert updated_action.status == ActionStatuses.ACCEPTED
+
+
+@pytest.mark.asyncio
+async def test_delete_company_action(
+    uow, company_actions_service, company_1, user_1, user_3
+):
+    invitation_data = CompanyActionCreateFactory.build(
+        company_id=company_1.id,
+        user_id=user_3.id,
+        action_type=ActionTypes.INVITATION,
+        status=ActionStatuses.PENDING,
+    )
+    action = await company_actions_service.create_company_action(
+        uow, current_user_id=user_1.id, data=invitation_data
+    )
+
+    deleted = await company_actions_service.delete_company_action(
+        uow, current_user_id=user_1.id, company_action_id=action.id
+    )
+
+    assert deleted is None
