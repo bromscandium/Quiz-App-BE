@@ -34,7 +34,7 @@ jobs:
 
   deploy:
     needs: build-and-push
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     environment: Quiz-App
     steps:
       - name: Deploy to server via SSH
