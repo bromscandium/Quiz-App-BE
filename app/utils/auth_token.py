@@ -16,8 +16,8 @@ class AuthTokenUtil:
         self.private_key = self._read_or_decode(security_settings.jwt.private_key)
         self.public_key = self._read_or_decode(security_settings.jwt.public_key)
 
-    def _read_or_decode(self, value: str) -> str | None:
-        return base64.b64decode(value).decode("utf-8")
+    def _read_or_decode(self, value: str) -> bytes:
+        return base64.b64decode(value)
 
     def _create_token(
         self, subject: str, expire_delta: timedelta, token_type: str
