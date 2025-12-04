@@ -8,6 +8,13 @@ class UserAlreadyExists(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
+class NicknameTaken(HTTPException):
+    def __init__(self):
+        super().__init__(
+            detail="Nickname is already taken",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class UnauthorizedUserAction(HTTPException):
     def __init__(self):

@@ -20,3 +20,9 @@ class PrivateCompany(HTTPException):
         super().__init__(
             detail="Company is private", status_code=status.HTTP_403_FORBIDDEN
         )
+
+class OwnerMembership(HTTPException):
+    def __init__(self):
+        super().__init__(
+            detail="Can't delete owner membership", status_code=status.HTTP_403_FORBIDDEN
+        )

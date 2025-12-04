@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from pydantic import EmailStr
 
-from app.dependencies import get_auth_user_from_token, get_uow
+from app.dependencies import get_auth_user_from_cookie, get_uow
 from app.schemas.user import (
     UserCreate,
     UserOwnedCompaniesList,
@@ -62,7 +62,7 @@ async def update_user(
     user_id: UUID,
     data: UserUpdate,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id=Depends(get_auth_user_from_token),
+    current_user_id=Depends(get_auth_user_from_cookie),
 ) -> UserSchema:
     return await user_service.update_user(uow, user_id, data, current_user_id)
 
@@ -71,7 +71,7 @@ async def update_user(
 async def delete_user(
     user_id: UUID,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id=Depends(get_auth_user_from_token),
+    current_user_id=Depends(get_auth_user_from_cookie),
 ) -> None:
     await user_service.delete_user(uow, user_id, current_user_id)
 

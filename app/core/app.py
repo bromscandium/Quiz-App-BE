@@ -10,7 +10,7 @@ class DbSettings(BaseConfig):
     host: str
     port: int
     db: str
-    debug: bool = False
+
 
     @property
     def url(self) -> str:
@@ -27,7 +27,7 @@ class RedisSettings(BaseConfig):
 
     @property
     def url(self) -> str:
-        return f"rediss://{self.host}:{self.port}"
+        return f"redis://{self.host}:{self.port}"
 
     model_config = SettingsConfigDict(
         env_prefix="REDIS_",

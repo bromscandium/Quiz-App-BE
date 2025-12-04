@@ -2,6 +2,7 @@ from uuid import UUID
 
 from app.enums import Roles
 from app.exceptions import (
+    OwnerMembership,
     MembershipNotFound,
     PrivateCompany,
     SetAnotherOwnerError,
@@ -27,9 +28,9 @@ class MembershipService:
         self.logger_util = LoggerUtil()
 
     async def create_membership(
-        self,
-        uow: UnitOfWork,
-        data: MembershipCreate,
+            self,
+            uow: UnitOfWork,
+            data: MembershipCreate,
     ) -> MembershipSchema:
         membership = await uow.membership.create(**data.model_dump())
         await uow.session.flush()
@@ -50,7 +51,7 @@ class MembershipService:
         return MembershipSchema.model_validate(membership)
 
     async def read_membership_by_id(
-        self, uow: UnitOfWork, value: UUID
+            self, uow: UnitOfWork, value: UUID
     ) -> MembershipSchema | None:
         membership, _ = await uow.membership.read(
             field="id",
@@ -70,7 +71,7 @@ class MembershipService:
         return MembershipSchema.model_validate(membership[0])
 
     async def read_user_memberships(
-        self, uow: UnitOfWork, current_user_id: UUID, offset: int = 0, limit: int = 20
+            self, uow: UnitOfWork, current_user_id: UUID, offset: int = 0, limit: int = 20
     ) -> UserMembershipsList:
         memberships, total = await uow.membership.read(
             field="user_id",
@@ -88,13 +89,13 @@ class MembershipService:
         )
 
     async def read_company_members(
-        self,
-        uow: UnitOfWork,
-        current_user_id: UUID,
-        company_id: UUID,
-        offset: int = 0,
-        limit: int = 20,
-        roles: set[Roles] | None = None,
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
+            offset: int = 0,
+            limit: int = 20,
+            roles: set[Roles] | None = None,
     ) -> CompanyMembershipsList | None:
         is_owner = await check_owner_permission(current_user_id, uow, company_id)
 
@@ -123,11 +124,11 @@ class MembershipService:
         )
 
     async def update_membership(
-        self,
-        uow: UnitOfWork,
-        membership_id: UUID,
-        data: MembershipUpdate,
-        current_user_id: UUID,
+            self,
+            uow: UnitOfWork,
+            membership_id: UUID,
+            data: MembershipUpdate,
+            current_user_id: UUID,
     ) -> MembershipSchema:
         membership = await self.read_membership_by_id(uow, membership_id)
 
@@ -159,24 +160,33 @@ class MembershipService:
         return MembershipSchema.model_validate(membership)
 
     async def delete_membership(
-        self, uow: UnitOfWork, membership_id: UUID, current_user_id: UUID
+            self, uow: UnitOfWork, membership_id: UUID, current_user_id: UUID
     ) -> None:
         membership, _ = await uow.membership.read(
             field="id",
             value=membership_id,
             offset=0,
             limit=1,
-            load_relationships=["company"],
+            load_relationships=["user", "company"],
         )
 
         if not membership:
             self.logger_util.info("Membership not found")
             raise MembershipNotFound
 
-        if not await check_owner_permission(
-            current_user_id, uow, membership[0].company.id
-        ):
+        member = membership[0]
+
+        is_owner = await check_owner_permission(
+            uow=uow,
+            current_user_id=current_user_id,
+            company_id=member.company.id,
+        )
+        if not is_owner and current_user_id != member.user.id:
             self.logger_util.info("Owner is not authorized")
             raise UnauthorizedCompanyOwner
+
+        if member.role == Roles.OWNER:
+            self.logger_util.info("Can't delete owner membership")
+            raise OwnerMembership
 
         await uow.membership.delete_by("id", membership_id)

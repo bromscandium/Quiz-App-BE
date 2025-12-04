@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from starlette import status
 
-from app.dependencies import get_uow, get_auth_user_from_token
+from app.dependencies import get_uow, get_auth_user_from_cookie
 from app.schemas.notification import NotificationCreate, NotificationSchema
 from app.schemas.user_notification import (
     UserNotificationUpdate,
@@ -44,7 +44,7 @@ async def read_notification_by_id(
 )
 async def read_user_notifications(
     user_id: UUID,
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
     offset: int = 0,
     limit: int = 20,
     uow: UnitOfWork = Depends(get_uow),
@@ -61,7 +61,7 @@ async def read_user_notifications(
 )
 async def update_notification(
     data: UserNotificationUpdate,
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
     uow: UnitOfWork = Depends(get_uow),
 ) -> UserNotificationSchema:
     return await notification_service.update_notification(uow, current_user_id, data)
@@ -71,7 +71,7 @@ async def update_notification(
 async def delete_notification(
     notification_id: UUID,
     user_id: UUID,
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
     uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     await notification_service.delete_notification(

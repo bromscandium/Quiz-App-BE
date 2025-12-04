@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
-from app.dependencies import get_auth_user_from_token, get_uow
+from app.dependencies import get_auth_user_from_cookie, get_uow
 from app.schemas.quiz_attempt import (
     QuizAttemptCreate,
     QuizAttemptSchema,
@@ -19,7 +19,7 @@ service = QuizAttemptService()
 async def create_quiz_attempt(
     data: QuizAttemptCreate,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
 ) -> QuizAttemptSchema:
     return await service.create_quiz_attempt(uow, data, current_user_id)
 
@@ -34,7 +34,7 @@ async def read_quiz_attempt_by_id(
 @router.get("/user/", response_model=QuizAttemptsList)
 async def read_user_quiz_attempts(
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
     offset: int = 0,
     limit: int = 20,
 ) -> QuizAttemptsList:
@@ -46,7 +46,7 @@ async def read_company_quiz_attempts(
     company_id: UUID,
     quiz_id: UUID | None,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
     offset: int = 0,
     limit: int = 20,
 ) -> QuizAttemptsList:

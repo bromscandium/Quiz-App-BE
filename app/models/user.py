@@ -1,4 +1,6 @@
-from sqlalchemy import String
+from datetime import date
+
+from sqlalchemy import String, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -16,6 +18,10 @@ class User(Base):
         String(320), unique=True, nullable=False, index=True
     )
     hashed_password: Mapped[str] = mapped_column(String(1024), nullable=False)
+
+    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    bio: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    birthday: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     owned_companies: Mapped[list["Company"]] = relationship(
         back_populates="owner", cascade="all, delete-orphan"

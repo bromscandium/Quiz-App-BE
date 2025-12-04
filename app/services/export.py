@@ -1,4 +1,3 @@
-import json
 import csv
 import io
 from uuid import UUID
@@ -6,8 +5,8 @@ from fastapi import Response
 
 from app.schemas.quiz_attempt import QuizAttemptsList, QuizAttemptSchema
 from app.unit_of_work import UnitOfWork
-from app.exceptions import UnauthorizedCompanyOwner, QuizNotFound
-from app.permissions import check_owner_permission
+from app.exceptions import UnauthorizedQuizAction, QuizNotFound
+from app.enums import Roles
 from app.utils import LoggerUtil
 
 
@@ -15,30 +14,90 @@ class ExportService:
     def __init__(self):
         self.logger_util = LoggerUtil()
 
-    async def _get_quiz_results(
-        self,
-        uow: UnitOfWork,
-        company_id: UUID | None,
-        quiz_id: UUID | None,
-    ) -> QuizAttemptsList:
-        field = "quiz_id" if quiz_id else "company_id"
-        value = quiz_id if quiz_id else company_id
+    async def _check_company_admin_access(
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
+    ) -> None:
+        memberships, _ = await uow.membership.read(
+            field="user_id", value=current_user_id, offset=0, limit=100
+        )
 
+        if any(
+                m.company_id == company_id
+                and m.role in {Roles.ADMIN, Roles.OWNER}
+                and m.is_active
+                for m in memberships
+        ):
+            return
+
+        raise UnauthorizedQuizAction
+
+    async def _get_user_quiz_results(
+            self,
+            uow: UnitOfWork,
+            user_id: UUID,
+            quiz_id: UUID | None = None,
+    ) -> QuizAttemptsList:
         quiz_attempts, total = await uow.quiz_attempts.read(
-            field=field,
-            value=value,
+            field="user_id",
+            value=user_id,
             offset=0,
-            limit=1000,
+            limit=10000,
             load_relationships=[
                 "user_answers",
                 "user",
                 "company",
-                "company.owner",
                 "quiz",
                 "quiz.questions",
                 "quiz.questions.answer_options",
-            ],
+            ]
         )
+
+        if quiz_id:
+            quiz_attempts = [qa for qa in quiz_attempts if qa.quiz_id == quiz_id]
+            total = len(quiz_attempts)
+
+        quiz_attempts_schemas = [
+            QuizAttemptSchema.model_validate(quiz_attempt)
+            for quiz_attempt in quiz_attempts
+        ]
+
+        return QuizAttemptsList(
+            quiz_attempts=quiz_attempts_schemas,
+            total=total,
+        )
+
+    async def _get_company_quiz_results(
+            self,
+            uow: UnitOfWork,
+            company_id: UUID,
+            quiz_id: UUID | None = None,
+            user_id: UUID | None = None,
+    ) -> QuizAttemptsList:
+        quiz_attempts, total = await uow.quiz_attempts.read(
+            field="company_id",
+            value=company_id,
+            offset=0,
+            limit=10000,
+            load_relationships=[
+                "user_answers",
+                "user",
+                "company",
+                "quiz",
+                "quiz.questions",
+                "quiz.questions.answer_options",
+            ]
+        )
+
+        if quiz_id:
+            quiz_attempts = [qa for qa in quiz_attempts if qa.quiz_id == quiz_id]
+
+        if user_id:
+            quiz_attempts = [qa for qa in quiz_attempts if qa.user_id == user_id]
+
+        total = len(quiz_attempts)
 
         quiz_attempts_schemas = [
             QuizAttemptSchema.model_validate(quiz_attempt)
@@ -108,31 +167,12 @@ class ExportService:
 
         return output.getvalue()
 
-    async def export_quiz_results(
-        self,
-        uow: UnitOfWork,
-        current_user_id: UUID,
-        company_id: UUID | None,
-        quiz_id: UUID | None,
-        export_type: str,
+    def _create_response(
+            self,
+            data: QuizAttemptsList,
+            export_type: str,
+            filename_prefix: str,
     ) -> Response:
-        if not await check_owner_permission(current_user_id, uow, company_id):
-            self.logger_util.info("Owner not authorized for export")
-            raise UnauthorizedCompanyOwner
-
-        if quiz_id:
-            quiz, _ = await uow.quizzes.read(
-                field="id",
-                value=quiz_id,
-                offset=0,
-                limit=1,
-            )
-            if not quiz:
-                self.logger_util.info("Quiz not found")
-                raise QuizNotFound
-
-        data = await self._get_quiz_results(uow, company_id, quiz_id)
-
         if export_type == "csv":
             content = self._to_csv(data)
             media_type = "text/csv"
@@ -140,10 +180,86 @@ class ExportService:
             content = self._to_json(data)
             media_type = "application/json"
 
-        filename = f"quiz_{quiz_id if quiz_id else company_id}_results.{export_type}"
+        filename = f"{filename_prefix}.{export_type}"
 
         return Response(
             content=content,
             media_type=media_type,
             headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
+
+    async def export_user_results(
+            self,
+            uow: UnitOfWork,
+            user_id: UUID,
+            quiz_id: UUID | None,
+            export_type: str,
+    ) -> Response:
+        data = await self._get_user_quiz_results(uow, user_id, quiz_id)
+
+        filename_prefix = f"my_results_quiz_{quiz_id}" if quiz_id else "my_results_all"
+
+        return self._create_response(data, export_type, filename_prefix)
+
+    async def export_company_user_results(
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
+            user_id: UUID,
+            quiz_id: UUID | None,
+            export_type: str,
+    ) -> Response:
+        await self._check_company_admin_access(uow, current_user_id, company_id)
+
+        data = await self._get_company_quiz_results(
+            uow, company_id, quiz_id, user_id
+        )
+
+        filename_prefix = (
+            f"user_{user_id}_quiz_{quiz_id}"
+            if quiz_id
+            else f"user_{user_id}_all"
+        )
+
+        return self._create_response(data, export_type, filename_prefix)
+
+    async def export_company_all_results(
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
+            quiz_id: UUID | None,
+            export_type: str,
+    ) -> Response:
+        await self._check_company_admin_access(uow, current_user_id, company_id)
+
+        data = await self._get_company_quiz_results(uow, company_id, quiz_id)
+
+        filename_prefix = (
+            f"company_{company_id}_quiz_{quiz_id}"
+            if quiz_id
+            else f"company_{company_id}_all"
+        )
+
+        return self._create_response(data, export_type, filename_prefix)
+
+    async def export_company_quiz_results(
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
+            quiz_id: UUID,
+            export_type: str,
+    ) -> Response:
+        await self._check_company_admin_access(uow, current_user_id, company_id)
+
+        quiz, _ = await uow.quizzes.read(field="id", value=quiz_id, offset=0, limit=1)
+        if not quiz or quiz[0].company_id != company_id:
+            raise QuizNotFound
+
+        data = await self._get_company_quiz_results(uow, company_id, quiz_id)
+
+        filename_prefix = f"quiz_{quiz_id}_results"
+
+        return self._create_response(data, export_type, filename_prefix)

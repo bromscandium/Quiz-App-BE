@@ -47,7 +47,7 @@ async def logout(
 
 @router.get("/me", response_model=UserSchema, status_code=status.HTTP_200_OK)
 async def me(
-    user_id: UUID = Depends(get_auth_user_from_token),
+    user_id: UUID = Depends(get_auth_user_from_cookie),
     uow: UnitOfWork = Depends(get_uow),
 ) -> UserSchema:
     return await auth_service.me(uow, user_id)

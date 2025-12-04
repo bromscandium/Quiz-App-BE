@@ -30,24 +30,24 @@ class CompanyActionsService:
         self.logger_util = LoggerUtil()
 
     async def _get_company_action_by_id(
-        self, uow: UnitOfWork, action_id: UUID
+            self, uow: UnitOfWork, action_id: UUID
     ) -> CompanyActionSchema | None:
-        company, _ = await uow.company_actions.read(
+        company_action, _ = await uow.company_actions.read(
             field="id",
             value=action_id,
             offset=0,
-            limit=1,
+            limit=20,
             load_relationships=["user", "company", "company.owner"],
             use_joined_load=False,
         )
 
-        if not company:
+        if not company_action:
             return None
 
-        return company[0]
+        return company_action[0]
 
     async def _validate_user_permission(
-        self, uow: UnitOfWork, company_action: CompanyActionSchema, user_id: UUID
+            self, uow: UnitOfWork, company_action: CompanyActionSchema, user_id: UUID
     ):
         is_owner = await check_owner_permission(user_id, uow, company_action.company.id)
         is_current_user = user_id == company_action.user.id
@@ -57,11 +57,11 @@ class CompanyActionsService:
             raise UnauthorizedUserAction
 
     async def create_company_action(
-        self, uow: UnitOfWork, current_user_id: UUID, data: CompanyActionCreate
+            self, uow: UnitOfWork, current_user_id: UUID, data: CompanyActionCreate
     ) -> CompanyActionSchema:
         if data.action_type == ActionTypes.INVITATION:
             if not await check_owner_permission(
-                current_user_id, uow, company_id=data.company_id
+                    current_user_id, uow, company_id=data.company_id
             ):
                 self.logger_util.info("Cannot create invitation action")
                 raise UnauthorizedCompanyOwner
@@ -95,7 +95,7 @@ class CompanyActionsService:
         return CompanyActionSchema.model_validate(company_action)
 
     async def read_company_action_by_id(
-        self, uow: UnitOfWork, current_user_id: UUID, company_action_id: UUID
+            self, uow: UnitOfWork, current_user_id: UUID, company_action_id: UUID
     ) -> CompanyActionSchema:
         company_action = await self._get_company_action_by_id(uow, company_action_id)
 
@@ -104,14 +104,14 @@ class CompanyActionsService:
         return CompanyActionSchema.model_validate(company_action)
 
     async def read_company_actions(
-        self,
-        uow: UnitOfWork,
-        current_user_id: UUID,
-        action_type: ActionTypes | None = None,
-        company_id: UUID | None = None,
-        status: ActionStatuses | None = None,
-        offset: int = 0,
-        limit: int = 20,
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            action_type: ActionTypes | None = None,
+            company_id: UUID | None = None,
+            status: ActionStatuses | None = None,
+            offset: int = 0,
+            limit: int = 20,
     ) -> CompanyActionsList:
         if company_id:
             if not await check_owner_permission(current_user_id, uow, company_id):
@@ -169,11 +169,11 @@ class CompanyActionsService:
         )
 
     async def update_company_action(
-        self,
-        uow: UnitOfWork,
-        current_user_id: UUID,
-        company_action_id: UUID,
-        data: CompanyActionUpdate,
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_action_id: UUID,
+            data: CompanyActionUpdate,
     ) -> CompanyActionSchema:
         company_action = await self._get_company_action_by_id(uow, company_action_id)
         if company_action is None:
@@ -207,7 +207,7 @@ class CompanyActionsService:
             raise NotAllowedChangeCompanyAction
 
     async def delete_company_action(
-        self, uow: UnitOfWork, current_user_id: UUID, company_action_id: UUID
+            self, uow: UnitOfWork, current_user_id: UUID, company_action_id: UUID
     ) -> None:
         company_action = await self._get_company_action_by_id(uow, company_action_id)
         if company_action is None:

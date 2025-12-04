@@ -21,13 +21,13 @@ from app.unit_of_work import UnitOfWork
 
 class StatsService:
     async def read_user_stats(
-        self,
-        uow: UnitOfWork,
-        user_id: UUID,
-        quiz_id: UUID | None = None,
-        company_id: UUID | None = None,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+            self,
+            uow: UnitOfWork,
+            user_id: UUID,
+            quiz_id: UUID | None = None,
+            company_id: UUID | None = None,
+            start_date: datetime | None = None,
+            end_date: datetime | None = None,
     ) -> UserStats:
         result = await uow.stats.calculate_stats(
             user_id=user_id,
@@ -55,12 +55,12 @@ class StatsService:
         )
 
     async def read_user_stats_quizzes(
-        self,
-        uow: UnitOfWork,
-        user_id: UUID,
-        company_id: UUID | None = None,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+            self,
+            uow: UnitOfWork,
+            user_id: UUID,
+            company_id: UUID | None = None,
+            start_date: datetime | None = None,
+            end_date: datetime | None = None,
     ) -> UserStatsQuizzesList:
         results = await uow.stats.calculate_user_quizzes_stats(
             user_id=user_id,
@@ -83,12 +83,12 @@ class StatsService:
         return UserStatsQuizzesList(user_attempts=user_attempts)
 
     async def read_user_stats_last_attempts(
-        self,
-        uow: UnitOfWork,
-        user_id: UUID,
-        company_id: UUID | None = None,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+            self,
+            uow: UnitOfWork,
+            user_id: UUID,
+            company_id: UUID | None = None,
+            start_date: datetime | None = None,
+            end_date: datetime | None = None,
     ) -> UserLastAttemptsList:
         results = await uow.stats.get_user_last_attempts(
             user_id=user_id,
@@ -109,34 +109,35 @@ class StatsService:
         return UserLastAttemptsList(user_attempts=user_attempts)
 
     async def _check_company_admin_access(
-        self,
-        uow: UnitOfWork,
-        current_user_id: UUID,
-        company_id: UUID,
-    ) -> None:
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
+    ) -> bool | None:
         memberships, _ = await uow.membership.read(
             field="user_id", value=current_user_id, offset=0, limit=100
         )
 
         if any(
-            m.company_id == company_id
-            and m.role in {Roles.ADMIN, Roles.OWNER}
-            and m.is_active
-            for m in memberships
+                m.company_id == company_id
+                and m.role in {Roles.ADMIN, Roles.OWNER}
+                and m.is_active
+                for m in memberships
         ):
-            return
+            return False
 
-        raise UnauthorizedQuizAction
+        return True
 
     async def read_company_users_stats(
-        self,
-        uow: UnitOfWork,
-        current_user_id: UUID,
-        company_id: UUID,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
+            start_date: datetime | None = None,
+            end_date: datetime | None = None,
     ) -> CompanyUserStatsList | None:
-        await self._check_company_admin_access(uow, current_user_id, company_id)
+        if await self._check_company_admin_access(uow, current_user_id, company_id):
+            return None
 
         results = await uow.stats.calculate_company_users_stats(
             company_id=company_id,
@@ -145,7 +146,7 @@ class StatsService:
         )
 
         if not results:
-            return None
+            return CompanyUserStatsList(user_stats=[])
 
         user_stats = [
             CompanyUserStats(
@@ -161,15 +162,16 @@ class StatsService:
         return CompanyUserStatsList(user_stats=user_stats)
 
     async def read_company_user_quizzes_stats(
-        self,
-        uow: UnitOfWork,
-        current_user_id: UUID,
-        company_id: UUID,
-        user_id: UUID,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
+            user_id: UUID,
+            start_date: datetime | None = None,
+            end_date: datetime | None = None,
     ) -> CompanyUserQuizStatsList | None:
-        await self._check_company_admin_access(uow, current_user_id, company_id)
+        if await self._check_company_admin_access(uow, current_user_id, company_id):
+            return None
 
         results = await uow.stats.calculate_company_user_quizzes_stats(
             company_id=company_id,
@@ -179,7 +181,7 @@ class StatsService:
         )
 
         if not results:
-            return None
+            return CompanyUserQuizStatsList(quiz_stats=[])
 
         quiz_stats = [
             CompanyUserQuizStats(
@@ -195,19 +197,20 @@ class StatsService:
         return CompanyUserQuizStatsList(quiz_stats=quiz_stats)
 
     async def read_company_users_last_attempts(
-        self,
-        uow: UnitOfWork,
-        current_user_id: UUID,
-        company_id: UUID,
+            self,
+            uow: UnitOfWork,
+            current_user_id: UUID,
+            company_id: UUID,
     ) -> CompanyUserLastAttemptsList | None:
-        await self._check_company_admin_access(uow, current_user_id, company_id)
+        if await self._check_company_admin_access(uow, current_user_id, company_id):
+            return None
 
         results = await uow.stats.get_company_users_last_attempts(
             company_id=company_id,
         )
 
         if not results:
-            return None
+            return CompanyUserLastAttemptsList(user_attempts=[])
 
         user_attempts = [
             CompanyUserLastAttempt(

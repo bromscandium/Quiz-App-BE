@@ -16,7 +16,7 @@ from app.schemas.auth import TokenResponse
 from app.schemas.user import UserCreate, UserSchema
 from app.services.user import UserService
 from app.unit_of_work import UnitOfWork
-from app.utils import AuthTokenUtil, PasswordUtil
+from app.utils import AuthTokenUtil, PasswordUtil, LoggerUtil
 
 
 class AuthService:
@@ -24,6 +24,7 @@ class AuthService:
         self.auth_token = AuthTokenUtil()
         self.user_service = UserService()
         self.password_util = PasswordUtil()
+        self.logger_util = LoggerUtil()
 
     async def fetch_auth0_userinfo(self, token: str) -> dict:
         if not token or len(token.split(".")) != 3:
@@ -53,11 +54,11 @@ class AuthService:
         return UUID(user_id)
 
     async def login(
-        self, uow: UnitOfWork, email: str, password: str
+            self, uow: UnitOfWork, email: str, password: str
     ) -> TokenResponse | None:
         user: UserSchema = await self.user_service.read_user_by_email(uow, email)
         if not user:
-            return None
+            raise UserNotFound
 
         if not self.password_util.verify_password(password, user.hashed_password):
             raise InvalidPassword
@@ -65,9 +66,9 @@ class AuthService:
         tokens = self.auth_token.create_tokens(str(user.id))
 
         return TokenResponse(
-            access_token=tokens["access_token"],
-            refresh_token=tokens["refresh_token"],
-            token_type="bearer",
+            access_token=tokens["ACCESS_TOKEN"],
+            refresh_token=tokens["REFRESH_TOKEN"],
+            token_type="Bearer",
             expires_in=self.auth_token.access_expire_minutes * 60,
         )
 
@@ -94,8 +95,8 @@ class AuthService:
         tokens = self.auth_token.create_tokens(str(user.id))
 
         return TokenResponse(
-            access_token=tokens["access_token"],
-            refresh_token=tokens["refresh_token"],
+            access_token=tokens["ACCESS_TOKEN"],
+            refresh_token=tokens["REFRESH_TOKEN"],
             token_type="bearer",
             expires_in=self.auth_token.access_expire_minutes * 60,
         )
@@ -103,21 +104,23 @@ class AuthService:
     async def refresh(self, old_refresh_token: str) -> TokenResponse:
         tokens = self.auth_token.refresh_tokens(old_refresh_token)
         if not tokens:
-            raise InvalidTokenFormat
+            raise AuthFailed
 
         return TokenResponse(
-            access_token=tokens["access_token"],
-            refresh_token=tokens["refresh_token"],
+            access_token=tokens["ACCESS_TOKEN"],
+            refresh_token=tokens["REFRESH_TOKEN"],
             token_type="bearer",
             expires_in=self.auth_token.access_expire_minutes * 60,
         )
 
     async def logout(self, raw_token: str) -> None:
-        self.auth_token.decode_token(raw_token)
+        decoded_token = self.auth_token.decode_token(raw_token)
+        self.logger_util.info(f"User with {decoded_token['sub']} logged out.")
+
 
     async def me(self, uow: UnitOfWork, user_id: UUID) -> UserSchema:
         user = await self.user_service.read_user_by_id(uow, user_id)
         if not user:
-            raise UserNotFound
+            raise AuthFailed
 
         return UserSchema.model_validate(user)

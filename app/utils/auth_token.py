@@ -1,6 +1,5 @@
 import base64
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import jwt
 
@@ -40,8 +39,8 @@ class AuthTokenUtil:
             subject, timedelta(days=self.refresh_expire_days), token_type="refresh"
         )
         return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+            "ACCESS_TOKEN": access_token,
+            "REFRESH_TOKEN": refresh_token,
         }
 
     def decode_token(self, token: str) -> dict:

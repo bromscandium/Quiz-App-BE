@@ -20,17 +20,17 @@ class QuizService:
         self.notification_service = NotificationService()
 
     async def _check_user_permissions(
-        self, uow: UnitOfWork, company_id: UUID, user_id: UUID
+            self, uow: UnitOfWork, company_id: UUID, user_id: UUID
     ) -> None:
         memberships, _ = await uow.membership.read(
             field="user_id", value=user_id, offset=0, limit=100
         )
 
         if any(
-            m.company_id == company_id
-            and m.role in {Roles.ADMIN, Roles.OWNER}
-            and m.is_active
-            for m in memberships
+                m.company_id == company_id
+                and m.role in {Roles.ADMIN, Roles.OWNER}
+                and m.is_active
+                for m in memberships
         ):
             return
 
@@ -52,11 +52,11 @@ class QuizService:
         return quiz_with_question[0]
 
     async def create_quiz(
-        self,
-        uow: UnitOfWork,
-        data: QuizCreate,
-        questions_data: QuestionsListCreate,
-        current_user_id: UUID,
+            self,
+            uow: UnitOfWork,
+            data: QuizCreate,
+            questions_data: QuestionsListCreate,
+            current_user_id: UUID,
     ) -> QuizSchema:
         await self._check_user_permissions(uow, data.company_id, current_user_id)
 
@@ -122,7 +122,7 @@ class QuizService:
         return QuizSchema.model_validate(quiz_with_question)
 
     async def read_quiz_by_id(
-        self, uow: UnitOfWork, quiz_id: UUID, current_user_id: UUID
+            self, uow: UnitOfWork, quiz_id: UUID, current_user_id: UUID
     ) -> QuizSchema | None:
         quiz = await self._get_quiz_by_id(uow, quiz_id)
 
@@ -140,7 +140,7 @@ class QuizService:
         return QuizSchema.model_validate(quiz)
 
     async def read_company_quizzes(
-        self, uow: UnitOfWork, company_id: UUID, offset: int = 0, limit: int = 20
+            self, uow: UnitOfWork, company_id: UUID, offset: int = 0, limit: int = 20
     ) -> QuizList:
         items, total = await uow.quizzes.read(
             field="company_id",
@@ -154,11 +154,11 @@ class QuizService:
         return QuizList(quizzes=quiz_schemas, total=total)
 
     async def update_quiz(
-        self,
-        uow: UnitOfWork,
-        quiz_id: UUID,
-        data: QuizUpdate,
-        current_user_id: UUID,
+            self,
+            uow: UnitOfWork,
+            quiz_id: UUID,
+            data: QuizUpdate,
+            current_user_id: UUID,
     ) -> QuizSchema:
         quiz = await self.read_quiz_by_id(uow, quiz_id, current_user_id)
         await self._check_user_permissions(uow, quiz.company_id, current_user_id)
@@ -167,6 +167,26 @@ class QuizService:
         if update_data:
             await uow.quizzes.update_by("id", quiz_id, **update_data)
             await uow.session.flush()
+
+        existing_questions, _ = await uow.questions.read(
+            field="quiz_id",
+            value=quiz_id,
+            offset=0,
+            limit=1000,
+            load_relationships=["answer_options"],
+        )
+
+        existing_ids = {q.id for q in existing_questions}
+        incoming_ids = {q.id for q in data.questions if q.id}
+
+        ids_to_delete = existing_ids - incoming_ids
+
+        for q in existing_questions:
+            if q.id in ids_to_delete:
+                await uow.answer_options.delete_by("question_id", q.id)
+                await uow.questions.delete_by("id", q.id)
+
+        await uow.session.flush()
 
         for question in data.questions:
             if question.id:
@@ -179,17 +199,30 @@ class QuizService:
                 )
                 await uow.session.flush()
 
-            for option in question.answer_options:
-                if option.id:
+            existing_opts_map = {}
+            if question.id:
+                for opt in new_question.answer_options:
+                    existing_opts_map[opt.id] = opt
+
+            incoming_opt_ids = {o.id for o in question.answer_options if o.id}
+            existing_opt_ids = set(existing_opts_map.keys())
+
+            opt_ids_to_delete = existing_opt_ids - incoming_opt_ids
+            for oid in opt_ids_to_delete:
+                await uow.answer_options.delete_by("id", oid)
+
+            for opt in question.answer_options:
+                if opt.id:
                     await uow.answer_options.update_by(
-                        "id", option.id, **option.model_dump(exclude_unset=True)
+                        "id", opt.id, **opt.model_dump(exclude_unset=True)
                     )
                 else:
                     await uow.answer_options.create(
                         question_id=new_question.id,
-                        **option.model_dump(exclude_unset=True),
+                        **opt.model_dump(exclude_unset=True),
                     )
-                    await uow.session.flush()
+
+            await uow.session.flush()
 
         quiz_with_questions, _ = await uow.quizzes.read(
             field="id",
@@ -202,7 +235,7 @@ class QuizService:
         return QuizSchema.model_validate(quiz_with_questions[0])
 
     async def delete_quiz(
-        self, uow: UnitOfWork, quiz_id: UUID, current_user_id: UUID
+            self, uow: UnitOfWork, quiz_id: UUID, current_user_id: UUID
     ) -> None:
         quiz = await self._get_quiz_by_id(uow, quiz_id)
         if quiz is None:

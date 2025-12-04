@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from starlette import status
 
-from app.dependencies import get_auth_user_from_token, get_uow
+from app.dependencies import get_auth_user_from_cookie, get_uow
 from app.enums.roles import Roles
 from app.schemas.membership import (
     CompanyMembershipsList,
@@ -39,12 +39,12 @@ async def read_membership_by_id(
 
 
 @router.get(
-    "/user/{current_user_id}",
+    "/user/",
     response_model=UserMembershipsList,
     status_code=status.HTTP_200_OK,
 )
 async def read_user_memberships(
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
     offset: int = 0,
     limit: int = 20,
     uow: UnitOfWork = Depends(get_uow),
@@ -64,7 +64,7 @@ async def read_company_members(
     offset: int = 0,
     limit: int = 20,
     roles: list[Roles] | None = Query(None),
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
     uow: UnitOfWork = Depends(get_uow),
 ) -> CompanyMembershipsList:
     return await membership_service.read_company_members(
@@ -86,7 +86,7 @@ async def update_membership(
     membership_id: UUID,
     data: MembershipUpdate,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id=Depends(get_auth_user_from_token),
+    current_user_id=Depends(get_auth_user_from_cookie),
 ) -> MembershipSchema:
     return await membership_service.update_membership(
         uow, membership_id, data, current_user_id
@@ -99,7 +99,7 @@ async def update_membership(
 )
 async def delete_membership(
     membership_id: UUID,
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
     uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     return await membership_service.delete_membership(
