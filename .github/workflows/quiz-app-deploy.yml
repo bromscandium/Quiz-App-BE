@@ -1,0 +1,92 @@
+name: Quiz App Backend CI/CD
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  build-and-push:
+    # Paused: no AWS deployment for now. Remove this `if` to turn the pipeline back on.
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    environment: Quiz-App
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.ECR_REPOSITORY }}:latest
+
+  deploy:
+    # Paused: no AWS deployment for now. Remove this `if` to turn the pipeline back on.
+    if: ${{ false }}
+    needs: build-and-push
+    runs-on: self-hosted
+    environment: Quiz-App
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REPOSITORY: ${{secrets.ECR_REPOSITORY}}
+
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      HOST: ${{ secrets.HOST }}
+      PORT: ${{ secrets.PORT }}
+      MODE: ${{ secrets.MODE }}
+      ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+
+      TEST_POSTGRES_USER: ${{ secrets.TEST_POSTGRES_USER }}
+      TEST_POSTGRES_PASSWORD: ${{ secrets.TEST_POSTGRES_PASSWORD }}
+      TEST_POSTGRES_DB: ${{ secrets.TEST_POSTGRES_DB }}
+      TEST_POSTGRES_HOST: ${{ secrets.TEST_POSTGRES_HOST }}
+      TEST_POSTGRES_PORT: ${{ secrets.TEST_POSTGRES_PORT }}
+
+      REDIS_HOST: ${{ secrets.REDIS_HOST }}
+      REDIS_PORT: ${{ secrets.REDIS_PORT }}
+
+      TEST_REDIS_HOST: ${{ secrets.TEST_REDIS_HOST }}
+      TEST_REDIS_PORT: ${{ secrets.TEST_REDIS_PORT }}
+
+      AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+      AUTH0_API_AUDIENCE: ${{ secrets.AUTH0_API_AUDIENCE }}
+
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      JWT_ALGORITHM: ${{ secrets.JWT_ALGORITHM }}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${{ secrets.JWT_ACCESS_TOKEN_EXPIRE_MINUTES }}
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${{ secrets.JWT_REFRESH_TOKEN_EXPIRE_DAYS }}
+      JWT_RAW_TOKEN_BYTES: ${{ secrets.JWT_RAW_TOKEN_BYTES }}
+      JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+      JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Deploy code
+        run: bash /home/ubuntu/deploy/deploy.sh
+
+

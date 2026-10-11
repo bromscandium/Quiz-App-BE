@@ -1,37 +1,32 @@
-from fastapi import HTTPException, status
+from fastapi import status, HTTPException
 
 
-class UserException(HTTPException):
-    def __init__(self, detail: str, status_code: int = status.HTTP_400_BAD_REQUEST):
-        super().__init__(status_code=status_code, detail=detail)
-
-
-class UserNotFound(UserException):
-    def __init__(self):
-        super().__init__(
-            detail="User not found",
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
-
-
-class UserAlreadyExists(UserException):
+class UserAlreadyExists(HTTPException):
     def __init__(self):
         super().__init__(
             detail="User already exists",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-
-class UnauthorizedUserAction(UserException):
+class NicknameTaken(HTTPException):
     def __init__(self):
         super().__init__(
-            detail="Unathorized Access Of Manipulating User Data",
+            detail="Nickname is already taken",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class UnauthorizedUserAction(HTTPException):
+    def __init__(self):
+        super().__init__(
+            detail="Unauthorized user access",
             status_code=status.HTTP_403_FORBIDDEN,
         )
 
 
-class RequestNotFound(UserException):
+class UserNotFound(HTTPException):
     def __init__(self):
         super().__init__(
-            detail="Invitation not found", status_code=status.HTTP_404_NOT_FOUND
+            detail="User not found",
+            status_code=status.HTTP_404_NOT_FOUND,
         )

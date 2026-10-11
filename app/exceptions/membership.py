@@ -1,22 +1,17 @@
-from fastapi import HTTPException, status
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
-
-
-class MembershipException(HTTPException):
-    def __init__(self, detail: str, status_code: int = status.HTTP_400_BAD_REQUEST):
-        super().__init__(status_code=status_code, detail=detail)
+from fastapi import status, HTTPException
 
 
 class MembershipNotFound(HTTPException):
     def __init__(self):
         super().__init__(
-            status_code=HTTP_404_NOT_FOUND, detail="Membership was not found"
+            detail="Membership not found",
+            status_code=status.HTTP_404_NOT_FOUND,
         )
 
 
-class SetAnotherOwner(HTTPException):
+class SetAnotherOwnerError(HTTPException):
     def __init__(self):
         super().__init__(
-            status_code=HTTP_403_FORBIDDEN,
             detail="Cannot exist two owners in one company",
+            status_code=status.HTTP_403_FORBIDDEN,
         )

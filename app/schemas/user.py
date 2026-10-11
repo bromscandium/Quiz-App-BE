@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, date
 from uuid import UUID
+
 from pydantic import EmailStr
 
 from app.schemas.base import Base
@@ -12,9 +13,11 @@ class UserSchema(Base):
     nickname: str
     email: EmailStr
     hashed_password: str
+    avatar_url: str | None = None
+    bio: str | None = None
+    birthday: date | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
-
 
 class UserCreate(Base):
     name: str
@@ -29,6 +32,9 @@ class UserUpdate(Base):
     surname: str | None = None
     nickname: str | None = None
     password: str | None = None
+    avatar_url: str | None = None
+    bio: str | None = None
+    birthday: date | None = None
 
 
 class UsersList(Base):

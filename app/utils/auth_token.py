@@ -1,5 +1,6 @@
+import base64
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
+
 import jwt
 
 from app.core.security import security_settings
@@ -11,14 +12,11 @@ class AuthTokenUtil:
         self.algorithm = security_settings.jwt.algorithm
         self.access_expire_minutes = security_settings.jwt.access_token_expire_minutes
         self.refresh_expire_days = security_settings.jwt.refresh_token_expire_days
-        self.priv_path = Path(security_settings.jwt.private_key_path)
-        self.pub_path = Path(security_settings.jwt.public_key_path)
-        self.private_key: str | None = (
-            self.priv_path.read_text() if self.priv_path.exists() else None
-        )
-        self.public_key: str | None = (
-            self.pub_path.read_text() if self.pub_path.exists() else None
-        )
+        self.private_key = self._read_or_decode(security_settings.jwt.private_key)
+        self.public_key = self._read_or_decode(security_settings.jwt.public_key)
+
+    def _read_or_decode(self, value: str) -> bytes:
+        return base64.b64decode(value)
 
     def _create_token(
         self, subject: str, expire_delta: timedelta, token_type: str
@@ -41,8 +39,8 @@ class AuthTokenUtil:
             subject, timedelta(days=self.refresh_expire_days), token_type="refresh"
         )
         return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+            "ACCESS_TOKEN": access_token,
+            "REFRESH_TOKEN": refresh_token,
         }
 
     def decode_token(self, token: str) -> dict:

@@ -1,24 +1,28 @@
 from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.utils.logger import logger
 from app.core.app import app_settings
 from app.db.redis import RedisClient
 from app.routers import routers
+from app.utils import LoggerUtil
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    redis_client = None
     try:
         await RedisClient.connect()
-        app.state.redis = RedisClient
+        redis_client = RedisClient
+        app.state.redis = redis_client
         yield
     except Exception as e:
-        raise
+        raise e
     finally:
-        await app.state.redis.close()
+        if redis_client:
+            await redis_client.close()
 
 
 app = FastAPI(title="Quiz App Backend", version="0.1.0", lifespan=lifespan)
@@ -39,7 +43,8 @@ def start():
     uvicorn.run(
         "app.main:app", host=app_settings.host, port=app_settings.port, reload=True
     )
-    logger.info("Server started")
+    logger = LoggerUtil()
+    logger.info(msg="Server started")
 
 
 if __name__ == "__main__":

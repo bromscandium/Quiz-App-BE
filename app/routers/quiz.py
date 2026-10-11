@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, status
 from uuid import UUID
 
-from app.unit_of_work.uow import UnitOfWork
-from app.services.quiz import QuizService
-from app.schemas.quiz import QuizSchema, QuizCreate, QuizUpdate, QuizList
+from fastapi import APIRouter, Depends, status
+
+from app.dependencies import get_auth_user_from_cookie, get_uow
 from app.schemas.question import QuestionsListCreate
-from app.dependencies.uow import get_uow
-from app.dependencies.auth_token import get_auth_user_from_token
+from app.schemas.quiz import QuizCreate, QuizList, QuizSchema, QuizUpdate
+from app.services import QuizService
+from app.unit_of_work import UnitOfWork
 
 router = APIRouter(prefix="/quizzes", tags=["quizzes"])
 quiz_service = QuizService()
@@ -17,7 +17,7 @@ async def create_quiz(
     data: QuizCreate,
     questions_data: QuestionsListCreate,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
 ) -> QuizSchema:
     return await quiz_service.create_quiz(uow, data, questions_data, current_user_id)
 
@@ -26,7 +26,7 @@ async def create_quiz(
 async def read_quiz(
     quiz_id: UUID,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
 ) -> QuizSchema:
     return await quiz_service.read_quiz_by_id(uow, quiz_id, current_user_id)
 
@@ -50,7 +50,7 @@ async def update_quiz(
     quiz_id: UUID,
     data: QuizUpdate,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
 ) -> QuizSchema:
     return await quiz_service.update_quiz(uow, quiz_id, data, current_user_id)
 
@@ -59,6 +59,6 @@ async def update_quiz(
 async def delete_quiz(
     quiz_id: UUID,
     uow: UnitOfWork = Depends(get_uow),
-    current_user_id: UUID = Depends(get_auth_user_from_token),
+    current_user_id: UUID = Depends(get_auth_user_from_cookie),
 ) -> None:
     return await quiz_service.delete_quiz(uow, quiz_id, current_user_id)
