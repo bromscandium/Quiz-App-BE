@@ -7,6 +7,8 @@ on:
 
 jobs:
   build-and-push:
+    # Paused: no AWS deployment for now. Remove this `if` to turn the pipeline back on.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     environment: Quiz-App
     steps:
@@ -33,6 +35,8 @@ jobs:
             ${{ secrets.ECR_REPOSITORY }}:latest
 
   deploy:
+    # Paused: no AWS deployment for now. Remove this `if` to turn the pipeline back on.
+    if: ${{ false }}
     needs: build-and-push
     runs-on: self-hosted
     environment: Quiz-App
